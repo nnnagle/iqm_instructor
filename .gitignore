@@ -1,0 +1,26 @@
+# Instructor-side build artifacts and student distributables are generated,
+# never authored. Source lives in labs/, data/*.R, R/, templates/.
+
+# Raw downloads, API responses, provenance scratch (per academic year).
+/data/build/
+
+# Student-facing packages produced by the build (folders + zips).
+/dist/*
+!/dist/.gitkeep
+
+# R / RStudio noise
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# Quarto render intermediates
+/labs/**/handout/*_files/
+/labs/**/handout/*.html
+/labs/**/handout/*.pdf
+.quarto/
+
+# OS noise
+.DS_Store
+Thumbs.db

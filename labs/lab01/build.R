@@ -1,0 +1,112 @@
+# ==============================================================================
+# Lab 1 assembler.
+#
+# Sourced by ../../build.R with `config` and `canonical` (paths to the pinned
+# canonical data) already in scope. Produces the student package under
+# dist/<year>/GEOG415_Lab1/ plus a matching .zip.
+# ==============================================================================
+
+lab_dir <- file.path("labs", "lab01")
+source(file.path(lab_dir, "manifest.R"), local = TRUE)
+
+root <- file.path(config$dist_dir, manifest$project_name)
+prepare_output_root(root, config$overwrite)
+create_student_skeleton(root, manifest$student_dirs)
+write_rproj(file.path(root, paste0(manifest$project_name, ".Rproj")))
+
+
+# ---- Data: ACS starter (Lab 1 slice of the canonical ACS) --------------------
+
+acs <- readr::read_csv(canonical$acs, show_col_types = FALSE)
+missing_cols <- setdiff(manifest$acs_columns, names(acs))
+if (length(missing_cols) > 0) {
+  stop("Canonical ACS is missing columns Lab 1 expects: ",
+       paste(missing_cols, collapse = ", "), call. = FALSE)
+}
+acs_lab1 <- acs[, manifest$acs_columns, drop = FALSE]
+acs_out  <- file.path(root, "data_raw", manifest$acs_out_name)
+readr::write_csv(acs_lab1, acs_out)
+
+
+# ---- Data: tract geography (copied whole) ------------------------------------
+
+tracts_out <- file.path(root, "data_raw", manifest$tracts_out_name)
+copy_file(canonical$tracts, tracts_out)
+
+
+# ---- Cross-check ACS/geography GEOIDs before shipping ------------------------
+
+tracts <- sf::st_read(canonical$tracts, quiet = TRUE)
+geo_geoids <- as.character(tracts$GEOID)
+acs_geoids <- as.character(acs_lab1$GEOID)
+geo_no_acs <- setdiff(geo_geoids, acs_geoids)
+acs_no_geo <- setdiff(acs_geoids, geo_geoids)
+if (length(geo_no_acs) > 0 || length(acs_no_geo) > 0) {
+  warning("ACS/geography GEOIDs are not a perfect match.\n",
+          "Geography without ACS: ", length(geo_no_acs), "\n",
+          "ACS without geography: ", length(acs_no_geo), "\n",
+          "Inspect before distributing.")
+}
+
+
+# ---- Templates copied verbatim ----------------------------------------------
+
+for (tmpl in manifest$root_templates) {
+  copy_file(file.path(lab_dir, "templates", tmpl), file.path(root, tmpl))
+}
+
+
+# ---- Student README with vintages filled in ---------------------------------
+
+acs_year   <- config$acs_year
+tiger_year <- if (is.na(config$tiger_year)) config$acs_year else config$tiger_year
+
+readme_tmpl <- readLines(file.path(lab_dir, "templates", "README.md"), encoding = "UTF-8")
+readme <- readme_tmpl
+readme <- gsub("{{ACS_YEAR}}",    acs_year,          readme, fixed = TRUE)
+readme <- gsub("{{TIGER_YEAR}}",  tiger_year,        readme, fixed = TRUE)
+readme <- gsub("{{STATE_NAME}}",  config$state_name, readme, fixed = TRUE)
+readme <- gsub("{{STATE_FIPS}}",  config$state_fips, readme, fixed = TRUE)
+write_lines_utf8(readme, file.path(root, "README.md"))
+
+
+# ---- Handout: render qmd into the package (fall back to copying source) ------
+
+qmd_src <- file.path(lab_dir, manifest$handout_qmd)
+if (nzchar(Sys.which("quarto"))) {
+  message("Rendering handout with Quarto ...")
+  status <- system2("quarto", c("render", shQuote(qmd_src), "--to", "pdf",
+                                "--output-dir", shQuote(normalizePath(root))))
+  if (status != 0L) {
+    warning("Quarto render failed; copying the .qmd source into the package instead.")
+    copy_file(qmd_src, file.path(root, basename(qmd_src)))
+  }
+} else {
+  message("Quarto not found; copying handout source (.qmd) into the package.")
+  copy_file(qmd_src, file.path(root, basename(qmd_src)))
+}
+
+
+# ---- Zip + provenance record -------------------------------------------------
+
+zip_path <- zip_package(root)
+message("Built: ", root)
+message("Zipped: ", zip_path)
+
+safe_dir_create(config$build_dir)
+write_lines_utf8(
+  c(
+    "GEOG 415 Lab 1 package build record",
+    "===================================",
+    paste0("Build date: ", Sys.Date()),
+    paste0("Academic year: ", config$academic_year),
+    paste0("State: ", config$state_name, " (", config$state_fips, ")"),
+    paste0("ACS 5-year vintage: ", acs_year),
+    paste0("TIGER/Line vintage: ", tiger_year),
+    paste0("ACS rows shipped: ", nrow(acs_lab1)),
+    paste0("Geography rows shipped: ", nrow(tracts)),
+    paste0("Geography without ACS: ", length(geo_no_acs)),
+    paste0("ACS without geography: ", length(acs_no_geo))
+  ),
+  file.path(config$build_dir, "lab01_build_record.txt")
+)

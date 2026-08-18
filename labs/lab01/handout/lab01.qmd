@@ -1,0 +1,195 @@
+---
+title: "GEOG 415 — Lab 1"
+subtitle: "R from zero: first script, first data, first map"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    geometry: margin=1in
+  html:
+    toc: true
+    number-sections: true
+execute:
+  eval: false
+  echo: true
+---
+
+# Before you start
+
+This is the first lab of a project you will build all semester: a **Community
+Primary Care Priority Rating** for Tennessee census tracts, made entirely from
+public data. Today you set up the project and go from raw data to your first
+map. You are not expected to know any R yet — every new piece is explained the
+first time it appears.
+
+**What you have:** a folder called `GEOG415_Lab1` containing an RStudio project
+(`GEOG415_Lab1.Rproj`), a setup script (`00_setup.R`), two data files in
+`data_raw/`, and empty folders (`figures/`, `data_processed/`, ...). Do not move
+or rename these.
+
+**What you will leave with:**
+
+- a working R project you can reopen next week,
+- tract geometry joined to one public indicator,
+- one saved map,
+- a `README` you started.
+
+# R vs. RStudio
+
+**R** is the language that does the computing. **RStudio** is the program you
+use to write and run R. When you open `GEOG415_Lab1.Rproj`, RStudio shows four
+areas:
+
+- **Source** (top-left): where you write and save scripts.
+- **Console** (bottom-left): where code actually runs; results print here.
+- **Environment** (top-right): the objects you have created.
+- **Files / Plots / Help** (bottom-right): your folder, your figures, and help.
+
+You write code in a **script** and send it to the Console to run. Writing in a
+script (not typing directly in the Console) is what makes your work
+reproducible: you can run it again from a clean session and get the same result.
+
+# The minimum R vocabulary for today
+
+- **Assignment** with `<-` stores a value in a named **object**:
+  `x <- 5` means "let `x` be 5."
+- A **function** does something to its **arguments**: `sqrt(9)` returns `3`.
+  `sqrt` is the function; `9` is the argument.
+- A **data frame** is a table: rows are observations (here, tracts), columns are
+  variables.
+- The **pipe** `|>` sends the thing on its left into the function on its right,
+  so steps read top to bottom.
+- When you hit an **error**, read the last line first. It usually names the
+  object or function R could not find. Errors are normal; they are information,
+  not failure.
+
+# Open the project and run setup
+
+1. Open `GEOG415_Lab1.Rproj`. The title bar should show the project name.
+2. Open `00_setup.R` and run it (Ctrl/Cmd+Enter runs the current line).
+
+`00_setup.R` loads the packages today needs:
+
+```r
+library(tidyverse)  # data frames, plotting, the pipe
+library(sf)         # spatial data: reading and mapping polygons
+```
+
+A **package** is a bundle of extra functions. `library()` switches one on for
+this session. If R says a package is not installed, install it once with
+`install.packages("tidyverse")` and try again.
+
+# Create your Lab 1 script
+
+Create a new script (File → New File → R Script) and save it as `01_get_data.R`
+in the project root. Everything below goes in that script. Run it a few lines at
+a time so you can see each result.
+
+## Read the two data files
+
+```r
+library(tidyverse)
+library(sf)
+
+acs    <- read_csv("data_raw/tn_acs_starter.csv")
+tracts <- st_read("data_raw/tn_tracts.gpkg")
+```
+
+Note the **relative paths**: because you are inside the project, `"data_raw/..."`
+just works, on any computer. That is why we use projects.
+
+## Inspect what you loaded
+
+Never trust data you have not looked at. Try each of these:
+
+```r
+glimpse(acs)     # compact overview: columns, types, first values
+names(acs)       # column names
+head(acs)        # first rows
+nrow(acs)        # how many tracts?
+View(acs)        # open as a table (capital V)
+```
+
+Do the same for `tracts`. Notice `tracts` has an extra `geometry` column: that
+is the polygon for each tract.
+
+## Make a rate
+
+`poverty_count` is a **count**; on its own it mostly reflects how many people
+live in a tract. A **rate** puts it on a common scale so tracts are comparable.
+Create the poverty rate as count over its universe:
+
+```r
+acs <- acs |>
+  mutate(poverty_rate = poverty_count / poverty_universe)
+```
+
+`mutate()` adds a new column. Look at it (`glimpse(acs)`) and sanity-check: a
+rate should sit between 0 and 1. Why did we divide by `poverty_universe` and not
+`total_population`? (Because poverty status is not determined for everyone.)
+
+## Join the table to the geometry
+
+The two files share a key: **`GEOID`**, the tract identifier. A **join** matches
+rows by that key so each polygon gets its poverty rate:
+
+```r
+tracts_joined <- tracts |>
+  left_join(acs, by = "GEOID")
+```
+
+Check the join did what you expect:
+
+```r
+nrow(tracts)          # rows before
+nrow(tracts_joined)   # rows after — should match
+sum(is.na(tracts_joined$poverty_rate))  # how many tracts got no match?
+```
+
+A handful of unmatched tracts can be normal; a large number means the key is
+wrong. Note the count in your `README` — do not delete rows yet.
+
+## Your first map
+
+```r
+ggplot(tracts_joined) +
+  geom_sf(aes(fill = poverty_rate)) +
+  scale_fill_viridis_c() +
+  labs(
+    title = "Poverty rate by census tract, Tennessee",
+    fill  = "Poverty rate"
+  ) +
+  theme_minimal()
+```
+
+`geom_sf()` draws the polygons; `aes(fill = poverty_rate)` colors each by its
+rate. Change the title, then try mapping a different variable (e.g.
+`total_population`) to see the pieces respond.
+
+## Save the map
+
+```r
+ggsave("figures/poverty_rate_map.png", width = 8, height = 6, dpi = 300)
+```
+
+Confirm the file appears in `figures/`.
+
+# Start your README
+
+Open `README.md` and add, in your own words:
+
+- the project purpose (priority for additional primary-care access),
+- the geography (Tennessee census tracts),
+- where the data live (`data_raw/`),
+- the order to run scripts (`00_setup.R`, then `01_get_data.R`),
+- the number of unmatched tracts you found in the join.
+
+# Before you leave — reproducibility check
+
+Restart R (Session → Restart R) and run `00_setup.R` then `01_get_data.R` from
+the top. If it runs clean and remakes the map, you are done. If not, fix the
+script until it does — that clean rerun is the real deliverable.
+
+**You should now have:** a working project, tract geometry joined to poverty,
+one saved map, and a started README. Next lab adds facilities and a first
+service-access measure.
