@@ -181,6 +181,92 @@ ggsave("figures/poverty_rate_map.png", width = 8, height = 6, dpi = 300)
 
 Confirm the file appears in `figures/`.
 
+# A classed map with ColorBrewer
+
+The map above uses a **continuous** color scale: every tract gets a slightly
+different shade. That is fine for a first look, but thematic maps are often
+easier to read when values are grouped into a few **classes** — like the
+choropleths and ColorBrewer palettes you saw in earlier courses. Here you will
+put the poverty rate into five classes and color them with a ColorBrewer
+palette.
+
+## Put the rate on a percentage scale
+
+Your `poverty_rate` is a fraction (e.g. `0.12`). Class boundaries read more
+naturally as percentages, so make a percentage version:
+
+```r
+tracts_joined <- tracts_joined |>
+  mutate(poverty_pct = 100 * poverty_rate)
+```
+
+## Cut the values into five classes
+
+`cut()` turns a numeric column into a **categorical** one (an ordered factor) by
+slicing it at breaks you choose. Use breaks at 5, 10, 15, and 20 percent. Adding
+`-Inf` and `Inf` at the ends catches everything below 5% and above 20%, which
+gives five classes in total:
+
+```r
+tracts_joined <- tracts_joined |>
+  mutate(
+    poverty_class = cut(
+      poverty_pct,
+      breaks = c(-Inf, 5, 10, 15, 20, Inf),
+      labels = c("< 5%", "5–10%", "10–15%", "15–20%", "> 20%")
+    )
+  )
+```
+
+Check the result with `table(tracts_joined$poverty_class)` to see how many tracts
+land in each class. (`cut()` intervals are closed on the right, so a tract at
+exactly 10% falls in the `5–10%` class.)
+
+## Choose a ColorBrewer palette
+
+ColorBrewer palettes come in three families, and the family should match the
+data:
+
+- **Sequential** (e.g. `YlOrRd`, `Blues`) — for ordered low-to-high values.
+- **Diverging** (e.g. `RdBu`) — for values with a meaningful midpoint.
+- **Qualitative** (e.g. `Set2`) — for unordered categories with no low/high.
+
+A poverty rate is ordered, so even though we are now drawing *classes*, the right
+choice is a **sequential** palette — not a qualitative one. Preview the options:
+
+```r
+library(RColorBrewer)
+display.brewer.all()          # see every palette
+display.brewer.pal(5, "YlOrRd")  # the 5 colors we will use
+```
+
+## Draw and save the classed map
+
+`scale_fill_brewer()` fills the classes using a ColorBrewer palette. Tracts with
+no poverty rate become `NA`, so give them an explicit grey:
+
+```r
+ggplot(tracts_joined) +
+  geom_sf(aes(fill = poverty_class), color = NA) +
+  scale_fill_brewer(
+    palette  = "YlOrRd",
+    na.value = "grey90",
+    name     = "Poverty rate"
+  ) +
+  labs(
+    title    = "Poverty rate by census tract, Tennessee",
+    subtitle = "Five classes, ColorBrewer YlOrRd"
+  ) +
+  theme_minimal()
+
+ggsave("figures/poverty_class_map.png", width = 8, height = 6, dpi = 300)
+```
+
+Compare it with your continuous map. The classed version is easier to read at a
+glance, but it hides variation *within* each class — that trade-off, and where
+you put the breaks, is a real cartographic choice, not a detail. Try shifting a
+break or switching to `"Blues"` and see how the story changes.
+
 # Start your README
 
 Open `README.md` and add, in your own words:
@@ -198,5 +284,5 @@ the top. If it runs clean and remakes the map, you are done. If not, fix the
 script until it does — that clean rerun is the real deliverable.
 
 **You should now have:** a working project, tract geometry joined to poverty,
-one saved map, and a started README. Next lab adds facilities and a first
-service-access measure.
+two saved maps (a continuous one and a classed ColorBrewer one), and a started
+README. Next lab adds facilities and a first service-access measure.
