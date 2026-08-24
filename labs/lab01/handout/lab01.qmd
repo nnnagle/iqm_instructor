@@ -66,7 +66,8 @@ reproducible: you can run it again from a clean session and get the same result.
 # Open the project and run setup
 
 1. Open `GEOG415_Lab1.Rproj`. The title bar should show the project name.
-2. Open `00_setup.R` and run it (Ctrl/Cmd+Enter runs the current line).
+2. Open `00_setup.R`. You might see a yellow banner at the top of the Console that says "Package tidyverse required but is not installed". If so, then click Install and wait until it finishes.
+3) Run the 00_setup file (Ctrl/Cmd + Enter runs the current line).
 
 `00_setup.R` loads the packages today needs:
 
@@ -81,7 +82,7 @@ this session. If R says a package is not installed, install it once with
 
 # Create your Lab 1 script
 
-Create a new script (File → New File → R Script) and save it as `01_get_data.R`
+Create a new script (File → New File → R Script) and save it as `01_get_data.R` (File → Save as)
 in the project root. Everything below goes in that script. Run it a few lines at
 a time so you can see each result.
 
@@ -131,8 +132,14 @@ rate should sit between 0 and 1. Why did we divide by `poverty_universe` and not
 ## Join the table to the geometry
 
 The two files share a key: **`GEOID`**, the tract identifier. A **join** matches
-rows by that key so each polygon gets its poverty rate:
+rows by that key so each polygon gets its poverty rate. Before you can join, however, you need to make sure that the data are the same data type. Use `glimpse(acs)` and `glimpse(tracts)`.  You'll see that that the GEOID field is a character field in tracts, but a numeric field in acs. We'll have to conver the numeric one to character.
 
+```r
+acs <- acs |> 
+  mutate(acs, GEOID = as.character(GEOID))
+```
+
+Now we can go ahead and joint the acs data to the tracts data.
 ```r
 tracts_joined <- tracts |>
   left_join(acs, by = "GEOID")
@@ -143,11 +150,11 @@ Check the join did what you expect:
 ```r
 nrow(tracts)          # rows before
 nrow(tracts_joined)   # rows after — should match
-sum(is.na(tracts_joined$poverty_rate))  # how many tracts got no match?
+sum(is.na(tracts_joined$poverty_rate))  # how many tracts got no poverty rate?
 ```
 
 A handful of unmatched tracts can be normal; a large number means the key is
-wrong. Note the count in your `README` — do not delete rows yet.
+wrong. Note the count in your `README` — do not delete rows yet. Using View(tracts_joined), find a tract that has not poverty rate, and see if you can identify why. Is no poverty rate here an error?
 
 ## Your first map
 
@@ -182,7 +189,7 @@ Open `README.md` and add, in your own words:
 - the geography (Tennessee census tracts),
 - where the data live (`data_raw/`),
 - the order to run scripts (`00_setup.R`, then `01_get_data.R`),
-- the number of unmatched tracts you found in the join.
+- the number of tracts with no poverty rate you found in the join.
 
 # Before you leave — reproducibility check
 
