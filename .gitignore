@@ -15,10 +15,13 @@
 .Ruserdata
 *.Rproj
 
-# Quarto render intermediates
+# Quarto render intermediates (handouts and instructor solutions)
 /labs/**/handout/*_files/
 /labs/**/handout/*.html
 /labs/**/handout/*.pdf
+/labs/**/solution/*_files/
+/labs/**/solution/*.html
+/labs/**/solution/*.pdf
 .quarto/
 
 # OS noise

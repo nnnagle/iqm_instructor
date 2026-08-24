@@ -73,18 +73,7 @@ write_lines_utf8(readme, file.path(root, "README.md"))
 # ---- Handout: render qmd into the package (fall back to copying source) ------
 
 qmd_src <- file.path(lab_dir, manifest$handout_qmd)
-if (nzchar(Sys.which("quarto"))) {
-  message("Rendering handout with Quarto ...")
-  status <- system2("quarto", c("render", shQuote(qmd_src), "--to", "pdf",
-                                "--output-dir", shQuote(normalizePath(root))))
-  if (status != 0L) {
-    warning("Quarto render failed; copying the .qmd source into the package instead.")
-    copy_file(qmd_src, file.path(root, basename(qmd_src)))
-  }
-} else {
-  message("Quarto not found; copying handout source (.qmd) into the package.")
-  copy_file(qmd_src, file.path(root, basename(qmd_src)))
-}
+emit_handout(qmd_src, root)
 
 
 # ---- Zip + provenance record -------------------------------------------------

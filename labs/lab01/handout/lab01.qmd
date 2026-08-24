@@ -286,6 +286,29 @@ Open `README.md` and add, in your own words:
 - the order to run scripts (`00_setup.R`, then `01_get_data.R`),
 - the number of tracts with no poverty rate you found in the join.
 
+# Looking ahead: Quarto
+
+You wrote today's work as a plain R script (`01_get_data.R`). Next lab you will
+also write a **Quarto** document (a `.qmd` file) — and this handout you are
+reading is one. Quarto lets you mix explanation, code, and the code's output
+(tables, maps) in a single file that you **render** to a PDF or web page. Instead
+of running code in one place and pasting results into a report somewhere else,
+the report *is* the code: re-render it and every number and figure rebuilds from
+the data. That is reproducibility you can hand to someone else.
+
+A `.qmd` file is mostly prose, with **code chunks** fenced like this:
+
+````markdown
+```{r}
+acs <- read_csv("data_raw/tn_acs_starter.csv")
+nrow(acs)
+```
+````
+
+When you render (the **Render** button in RStudio), the chunk runs and its result
+appears in the finished document. You do not need to write one today — just know
+the idea, because in Lab 2 your data document will be a `.qmd`.
+
 # Before you leave — reproducibility check
 
 Restart R (Session → Restart R) and run `00_setup.R` then `01_get_data.R` from

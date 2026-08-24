@@ -59,6 +59,24 @@ zip_package <- function(root) {
 }
 
 
+# Render a handout .qmd into `root` as PDF. If Quarto is unavailable or the
+# render fails, copy the .qmd source in instead, so a package is never missing
+# its handout.
+emit_handout <- function(qmd_src, root) {
+  if (nzchar(Sys.which("quarto"))) {
+    message("Rendering handout with Quarto ...")
+    status <- system2("quarto", c("render", shQuote(qmd_src), "--to", "pdf",
+                                  "--output-dir", shQuote(normalizePath(root))))
+    if (status == 0L) return(invisible(root))
+    warning("Quarto render failed; copying the .qmd source into the package instead.")
+  } else {
+    message("Quarto not found; copying handout source (.qmd) into the package.")
+  }
+  copy_file(qmd_src, file.path(root, basename(qmd_src)))
+  invisible(root)
+}
+
+
 # Guard: refuse to clobber an existing package unless overwrite is set.
 prepare_output_root <- function(root, overwrite) {
   if (dir.exists(root)) {

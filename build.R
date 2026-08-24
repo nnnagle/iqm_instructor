@@ -87,17 +87,25 @@ build_canonical_data <- function(cfg) {
   list(cfg = cfg, acs = acs_path, tracts = gpkg_path)
 }
 
-canonical <- build_canonical_data(config)
-config <- canonical$cfg
-
-
 # ------------------------------------------------------------------------------
 # Build requested labs.
 # ------------------------------------------------------------------------------
 
 args <- commandArgs(trailingOnly = TRUE)
-implemented_labs <- c("lab01")
+implemented_labs  <- c("lab01", "lab02")
+labs_needing_data <- c("lab01")   # labs that draw on the canonical pinned data
 labs <- if (length(args) > 0) args else implemented_labs
+
+# Build the canonical data only if a requested lab actually needs it, so
+# `Rscript build.R lab02` does not trigger an ACS/TIGER download or require a
+# Census API key.
+canonical <- NULL
+if (any(labs %in% labs_needing_data)) {
+  canonical <- build_canonical_data(config)
+  config <- canonical$cfg
+} else {
+  message("No requested lab needs canonical data; skipping the data build.")
+}
 
 for (lab in labs) {
   lab_build <- file.path("labs", lab, "build.R")

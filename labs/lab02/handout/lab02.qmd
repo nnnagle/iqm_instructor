@@ -1,0 +1,282 @@
+---
+title: "GEOG 415 — Lab 2"
+subtitle: "Acquire, describe, and audit the data"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    geometry: margin=1in
+  html:
+    toc: true
+    number-sections: true
+execute:
+  eval: false
+  echo: true
+---
+
+# Where this lab fits
+
+In Lab 1 we handed you clean data files. That was a convenience so you could
+learn R without also fighting an API. This lab pulls the curtain back: **you**
+will download the data — from the Census Bureau's API and from HRSA — describe
+it honestly, and audit whether it is fit for the job we are asking it to do.
+
+By the end you will have the project's real starting data and a **data
+document** that a stranger could read to understand where every number came
+from, what it means, and where it might mislead. That document is the backbone
+of the graded Module 1 deliverable.
+
+Two ideas run through everything today, and they are graded, not decorative:
+
+- **Reproducibility.** Every file you use must be downloadable and every number
+  must be produced by a script, so the whole thing can be rebuilt from scratch.
+- **Fitness for purpose.** A variable is a *measurement of* something, not the
+  thing itself. Part of your job is to ask who is mismeasured, miscounted,
+  missing, or made invisible — and whether the data can answer our question at
+  all.
+
+## Discuss first (before any code)
+
+With your team, answer in a sentence each — you will fold these into the data
+document:
+
+1. Why do you think Lab 1 gave you the data already cleaned instead of having
+   you download it? What did that hide?
+2. Our question is "which communities should get priority for additional
+   primary-care access?" Name one way a *tract-level* number could be right on
+   average but wrong about the people in it.
+
+# Get a Census API key
+
+The Census API requires a free key so the Bureau can rate-limit requests. Each
+of you should register your own — sharing keys is both against the terms and a
+reproducibility problem (the next person cannot rerun your code).
+
+1. Request a key: <https://api.census.gov/data/key_signup.html>. It arrives by
+   email, usually within minutes.
+2. Store it where R can find it, in a file called `.Renviron` in your home
+   directory. The reliable, works-on-every-OS way:
+
+   ```r
+   install.packages("usethis")   # once
+   usethis::edit_r_environ()     # opens your personal .Renviron
+   ```
+
+   Add this one line (your real key, no quotes), save, and **restart R**
+   (Session → Restart R):
+
+   ```text
+   CENSUS_API_KEY=your_key_here
+   ```
+
+   If you would rather find the file by hand, it lives at `~/.Renviron` on
+   **macOS** (that is `/Users/<you>/.Renviron`; the leading dot hides it — press
+   Cmd+Shift+. in Finder to reveal it), and at `C:\Users\<you>\Documents\.Renviron`
+   on **Windows** (run `normalizePath("~")` in R to confirm the exact folder R
+   reads). See the included `Renviron.example` file for the same notes.
+
+3. Confirm R can see it (this should print `TRUE`, and must **not** print your
+   key in a document you hand in):
+
+   ```r
+   nzchar(Sys.getenv("CENSUS_API_KEY"))
+   ```
+
+**Never** paste your key into a script, the data document, or anything you
+commit or submit. The key is not data; it is a password.
+
+# Download the ACS variables with tidycensus
+
+`tidycensus` is an R package that talks to the Census API for you: you ask for
+variables by their code and it returns a tidy table (with margins of error).
+
+```r
+library(tidyverse)
+library(tidycensus)
+
+# Registers the key for this session from your .Renviron.
+census_api_key(Sys.getenv("CENSUS_API_KEY"))
+```
+
+## Find the variable codes yourself
+
+Census variables have codes like `B17001_002`. Do not guess them — look them up.
+`load_variables()` downloads the catalogue for a vintage so you can search it:
+
+```r
+vars <- load_variables(2022, "acs5", cache = TRUE)   # detailed tables (B/C)
+subj <- load_variables(2022, "acs5/subject", cache = TRUE)  # subject tables (S)
+# Try: View(vars) then filter/search for "POVERTY", "VEHICLE", etc.
+```
+
+## The starter set
+
+Pull this small candidate set for **need and access barriers**. Two of them are
+*counts* you will turn into rates yourself; three come pre-computed as
+*percents* from Census "subject" tables. That difference is a lesson, not an
+accident — we come back to it.
+
+| Concept              | Where it comes from        | You compute a rate? |
+|----------------------|----------------------------|---------------------|
+| Total population     | `B01003_001` (count)       | no (denominator)    |
+| Poverty              | `B17001` (counts)          | **yes**             |
+| No vehicle available | `B08201` (counts)          | **yes**             |
+| Uninsured            | subject table `S2701` (%)  | no (already a %)    |
+| Age 65 and over      | subject table `S0101` (%)  | no (already a %)    |
+| With a disability    | subject table `S1810` (%)  | no (already a %)    |
+
+Confirm the exact cell codes with `load_variables()` for **the vintage your
+class is using** (subject-table codes in particular change between years), then
+request them. Example call — fill in the codes you verified:
+
+```r
+acs_vars <- c(
+  total_pop     = "B01003_001",
+  pov_num       = "B17001_002",   # income below poverty level
+  pov_denom     = "B17001_001",   # population poverty status is determined for
+  novehicle_num = "B08201_002",   # households: no vehicle available
+  hh_denom      = "B08201_001"    # all households
+  # uninsured_pct = "S2701_C05_001",  # verify with load_variables(.,"acs5/subject")
+  # age65_pct     = "S0101_C02_030",
+  # disability_pct= "S1810_C03_001"
+)
+
+acs_raw <- get_acs(
+  geography = "tract",
+  state     = "47",          # Tennessee
+  year      = 2022,          # use your class's pinned vintage
+  survey    = "acs5",
+  variables = acs_vars,
+  output    = "wide"         # one row per tract, columns end in E (estimate) / M (MOE)
+)
+```
+
+Save the download **unchanged** so the raw pull is reproducible, then compute
+your rates into a processed file:
+
+```r
+readr::write_csv(acs_raw, "data_raw/acs_tn_tract_raw.csv")
+
+acs <- acs_raw |>
+  mutate(
+    poverty_rate   = pov_numE / pov_denomE,
+    novehicle_rate = novehicle_numE / hh_denomE
+  )
+```
+
+Sanity-check before trusting anything: do rates fall in [0, 1]? How many tracts
+are `NA`, and where are they?
+
+# Download the HRSA facilities
+
+HRSA (the Health Resources & Services Administration) publishes the locations of
+federally funded health centers. Download the CSV from the HRSA Data Warehouse
+**and record the exact download URL and the date you accessed it** — that line
+is provenance, not bookkeeping.
+
+```r
+# Save the CSV into data_raw/ (paste the exact URL from the HRSA download page).
+download.file(
+  url      = "PASTE_HRSA_CSV_URL_HERE",
+  destfile = "data_raw/hrsa_health_centers.csv",
+  mode     = "wb"
+)
+
+hrsa <- readr::read_csv("data_raw/hrsa_health_centers.csv")
+glimpse(hrsa)   # find the state, latitude, and longitude columns
+```
+
+Filter to Tennessee and turn the rows into map points. Column names vary by
+download, so inspect first and adjust:
+
+```r
+library(sf)
+
+hrsa_tn <- hrsa |>
+  filter(State == "TN") |>
+  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+```
+
+## Discuss first
+
+Before mapping, with your team: what is a "health center site" in this file —
+a building where care happens, an administrative address, a mailing address? Do
+all the rows have coordinates? A point on a map looks authoritative; is it?
+
+# Make descriptive maps
+
+You already know how to make a classed choropleth from Lab 1. Join your ACS
+rates to the tract geometry you built in Lab 1 (`data_raw/tn_tracts.gpkg`) and
+map at least two indicators, then overlay the HRSA points.
+
+```r
+tracts <- st_read("data_raw/tn_tracts.gpkg")          # from Lab 1
+tracts_joined <- tracts |> left_join(acs, by = "GEOID")
+
+# One indicator as a classed choropleth (reuse your Lab 1 approach), e.g.:
+ggplot(tracts_joined) +
+  geom_sf(aes(fill = poverty_rate), color = NA) +
+  scale_fill_viridis_c(na.value = "grey90") +
+  labs(title = "Poverty rate by tract, Tennessee") +
+  theme_minimal()
+
+# Facilities as points over the tracts:
+ggplot() +
+  geom_sf(data = tracts, fill = "grey95", color = "white") +
+  geom_sf(data = hrsa_tn, size = 0.8, alpha = 0.7) +
+  labs(title = "HRSA health-center sites, Tennessee") +
+  theme_minimal()
+```
+
+Save each figure to `figures/` with a stable name. In the data document, write
+one sentence per map on what the reader should notice — and one on what the map
+might tempt them to conclude that the data cannot actually support (this is
+**point vs. areal** representation: points are places, tract colors are
+averages over areas).
+
+# Write the data document
+
+Open the provided `data_document.qmd`, fill it in, and render it. It is a
+Quarto report (like the Lab 1 handout) so its tables and maps are generated from
+your code — the document *is* the evidence that your work is reproducible.
+
+It must contain:
+
+1. **Purpose and intended use** — what the rating is for, and explicitly what it
+   is *not* for.
+2. **Source inventory** — for each source: agency, dataset name, vintage, access
+   date, URL/endpoint, and geographic coverage.
+3. **Data dictionary** — every variable you kept: plain-language definition,
+   units, denominator, and margin-of-error note where relevant.
+4. **One worked variable explanation** — we give you the **poverty rate** as the
+   model (see the template). **You write the same kind of explanation for the
+   others.**
+5. **Weaknesses and fitness for purpose** — for each variable and for the HRSA
+   points: what does it measure, what does it *not*, who is mismeasured or
+   missing, and is it fit for deciding primary-care priority? Be specific.
+
+# Reproducibility check
+
+Restart R and run your scripts in order from the top. A teammate — or a TA —
+should be able to reproduce your processed data, your maps, and your rendered
+document from your raw downloads and scripts alone, with no manual steps and no
+files edited by hand. If they cannot, it is not done.
+
+Confirm before you submit:
+
+- raw downloads are saved in `data_raw/` and never edited by hand;
+- your API key appears **nowhere** in any file you submit;
+- the exact HRSA URL and access date are recorded in the source inventory;
+- `data_document.qmd` renders cleanly from a fresh session.
+
+# What to turn in (Lab 2)
+
+- **Analytic Dataset v1** — the joined tract table saved to `data_processed/`.
+- **Source inventory + data dictionary** (in the data document).
+- **Descriptive figure set** — the maps, saved in `figures/`.
+- **`data_document.qmd`** rendered to PDF or HTML, with the poverty explanation
+  as given and your own explanations for the other variables, plus the
+  weaknesses / fitness-for-purpose section.
+
+Together these are the core of the Module 1 **Data Provenance & Measurement
+Audit**.

@@ -1,0 +1,138 @@
+---
+title: "GEOG 415 — Lab 2 SOLUTION / TA answer key"
+subtitle: "Reference run: acquire ACS + HRSA, describe, audit"
+format:
+  html:
+    toc: true
+    code-fold: false
+execute:
+  eval: false        # set TRUE once a key is set and the HRSA URL is pinned
+  echo: true
+  warning: true
+  message: true
+---
+
+<!--
+INSTRUCTOR / TA ONLY — do not distribute to students.
+
+This is the reference version of what students produce in Lab 2. It runs the
+whole pipeline end to end so a TA can (a) check student work against a known-good
+result and (b) confirm the lab still works before class each term.
+
+Before running:
+  1. Set CENSUS_API_KEY in ~/.Renviron (see labs/lab02/templates/Renviron.example).
+  2. Pin YEAR to the class vintage and VERIFY the subject-table codes with
+     load_variables() — subject-table cells (S....) move between vintages.
+  3. Paste the exact HRSA CSV download URL into HRSA_CSV_URL.
+  4. Flip eval to TRUE in the YAML above.
+-->
+
+```{r setup}
+library(tidyverse)
+library(tidycensus)
+library(sf)
+
+YEAR         <- 2022                     # <-- pin to class vintage
+HRSA_CSV_URL <- "PASTE_EXACT_HRSA_URL"   # <-- pin the exact download URL
+STATE        <- "47"                     # Tennessee
+
+census_api_key(Sys.getenv("CENSUS_API_KEY"))
+stopifnot(nzchar(Sys.getenv("CENSUS_API_KEY")))
+```
+
+## Verify variable codes for the vintage
+
+```{r catalogue}
+vars <- load_variables(YEAR, "acs5", cache = TRUE)
+subj <- load_variables(YEAR, "acs5/subject", cache = TRUE)
+# Confirm the S.... codes below against `subj` before trusting them.
+```
+
+## Pull ACS
+
+Two count-based indicators (students compute the rate) and three subject-table
+percents. Codes below are the intended set; re-verify the subject codes for YEAR.
+
+```{r acs}
+acs_vars <- c(
+  total_pop      = "B01003_001",
+  pov_num        = "B17001_002",
+  pov_denom      = "B17001_001",
+  novehicle_num  = "B08201_002",
+  hh_denom       = "B08201_001",
+  uninsured_pct  = "S2701_C05_001",   # percent uninsured — VERIFY for YEAR
+  age65_pct      = "S0101_C02_030",   # percent 65 and over — VERIFY for YEAR
+  disability_pct = "S1810_C03_001"    # percent with a disability — VERIFY for YEAR
+)
+
+acs_raw <- get_acs(
+  geography = "tract", state = STATE, year = YEAR,
+  survey = "acs5", variables = acs_vars, output = "wide"
+)
+
+readr::write_csv(acs_raw, "data_raw/acs_tn_tract_raw.csv")
+
+acs <- acs_raw |>
+  mutate(
+    poverty_rate   = pov_numE / pov_denomE,
+    novehicle_rate = novehicle_numE / hh_denomE,
+    uninsured_pct  = uninsured_pctE,
+    age65_pct      = age65_pctE,
+    disability_pct = disability_pctE
+  ) |>
+  select(GEOID, poverty_rate, novehicle_rate, uninsured_pct, age65_pct, disability_pct)
+
+readr::write_csv(acs, "data_processed/analytic_v1.csv")
+```
+
+## Pull HRSA and build points
+
+```{r hrsa}
+download.file(HRSA_CSV_URL, "data_raw/hrsa_health_centers.csv", mode = "wb")
+hrsa <- readr::read_csv("data_raw/hrsa_health_centers.csv")
+
+# Column names vary by download — inspect and adjust these three.
+hrsa_tn <- hrsa |>
+  filter(.data[["State"]] == "TN") |>
+  filter(!is.na(.data[["Longitude"]]), !is.na(.data[["Latitude"]])) |>
+  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+```
+
+## Join and map
+
+```{r maps}
+tracts <- st_read("data_raw/tn_tracts.gpkg", quiet = TRUE)   # from Lab 1
+tj <- tracts |> left_join(acs, by = "GEOID")
+
+ggplot(tj) +
+  geom_sf(aes(fill = poverty_rate), color = NA) +
+  scale_fill_viridis_c(na.value = "grey90") +
+  labs(title = "Poverty rate by tract, TN") + theme_minimal()
+ggsave("figures/poverty_rate_map.png", width = 8, height = 6, dpi = 300)
+
+ggplot() +
+  geom_sf(data = tracts, fill = "grey95", color = "white") +
+  geom_sf(data = hrsa_tn, size = 0.8, alpha = 0.7) +
+  labs(title = "HRSA sites, TN") + theme_minimal()
+ggsave("figures/hrsa_points_map.png", width = 8, height = 6, dpi = 300)
+```
+
+## Quick checks a TA can grade against
+
+```{r checks}
+list(
+  n_tracts      = nrow(acs),
+  pov_in_range  = all(acs$poverty_rate >= 0 & acs$poverty_rate <= 1, na.rm = TRUE),
+  pov_missing   = sum(is.na(acs$poverty_rate)),
+  hrsa_tn_sites = nrow(hrsa_tn)
+)
+```
+
+## Grading notes
+
+- **Reproducibility:** raw pulls saved unedited; rates computed in script; API key
+  absent from all submitted files; HRSA URL + access date recorded.
+- **Definitions:** poverty & no-vehicle built from num/denom; the three percents
+  are pre-computed — students should name the hidden denominator.
+- **Fitness for purpose:** expect specific points on ACS MOE in small tracts,
+  point-vs-areal for HRSA, and who is missing (group quarters, uncounted).

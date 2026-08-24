@@ -89,7 +89,16 @@ to force a re-download.
 ## Adding a lab
 
 Create `labs/<lab>/` with a `manifest.R`, a `build.R`, `templates/`, and a
-`handout/`. Add its data source to `data/` if it needs one, add any new ACS
-codes to `config$acs_variables`, and register the lab in `build.R`. Labs after
+`handout/`. Register the lab in `build.R` (`implemented_labs`), and if it draws
+on the canonical pinned data, add it to `labs_needing_data` there too. Labs after
 Lab 1 distribute *increments* into the project students already have, rather
-than a fresh project.
+than a fresh project (see `labs/lab02/`).
+
+A lab may also carry a `solution/` folder — an instructor/TA answer key (e.g.
+`labs/lab02/solution/lab02_solution.qmd`). It is versioned here but is **not**
+referenced by any manifest, so it never ships to students; only its rendered
+output is git-ignored.
+
+Lab 2 onward, students acquire data themselves (`tidycensus` + the HRSA CSV), so
+those labs ship no data — only a handout and templates. Each student needs a free
+Census API key in `~/.Renviron` (see `labs/lab02/templates/Renviron.example`).

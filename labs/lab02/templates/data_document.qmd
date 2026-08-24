@@ -1,0 +1,144 @@
+---
+title: "GEOG 415 — Data Provenance & Measurement Audit"
+subtitle: "Community Primary Care Priority Rating — Module 1"
+author: "Team: ___"
+date: today
+format:
+  html:
+    toc: true
+    number-sections: true
+  pdf:
+    toc: true
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+<!--
+This is your Module 1 deliverable. It is a Quarto document on purpose: the
+tables and maps below are generated from your code, so rendering it is proof
+your work is reproducible. Fill in every section marked TODO. The poverty rate
+is worked out for you as a model — write the other variables to the same
+standard.
+
+Do NOT put your Census API key in this file.
+-->
+
+```{r setup}
+library(tidyverse)
+library(sf)
+
+# Read the data you produced in Lab 2. Adjust paths/names to match your scripts.
+acs    <- readr::read_csv("data_processed/analytic_v1.csv", show_col_types = FALSE)
+tracts <- sf::st_read("data_raw/tn_tracts.gpkg", quiet = TRUE)
+```
+
+# Purpose and intended use
+
+<!-- TODO: 1–2 paragraphs. What decision could this rating inform? State plainly
+what it is FOR and what it is NOT for (e.g., not for ranking individual people,
+not a measure of health outcomes). -->
+
+# Source inventory
+
+For every source: agency, dataset, vintage, access date, endpoint/URL, coverage.
+
+| Source | Dataset | Vintage | Accessed | Endpoint / URL | Coverage |
+|--------|---------|---------|----------|----------------|----------|
+| U.S. Census Bureau | ACS 5-year Detailed & Subject Tables | `____` | `____` | `api.census.gov/.../acs5` (via tidycensus) | TN census tracts |
+| HRSA | Health Center service-delivery sites | `____` | `____` | `____ (paste exact download URL)` | U.S. (filtered to TN) |
+| U.S. Census Bureau | TIGER/Line tracts (from Lab 1) | `____` | `____` | `www2.census.gov/geo/tiger/...` | TN census tracts |
+
+<!-- TODO: fill in every blank with the real value you used. -->
+
+# Data dictionary
+
+<!-- TODO: one row per variable you KEPT. Include the plain-language definition,
+units, the denominator (for rates), and a margin-of-error note where relevant. -->
+
+| Variable | Definition (plain language) | Units | Denominator | MOE? |
+|----------|-----------------------------|-------|-------------|------|
+| `poverty_rate` | Share of the population (for whom poverty status is determined) with income below the poverty level | proportion 0–1 | `poverty_universe` (B17001_001) | inherits ACS MOE on numerator & denominator |
+| `novehicle_rate` | `____` | `____` | `____` | `____` |
+| `uninsured_pct` | `____` | `____` | `____` | `____` |
+| `age65_pct` | `____` | `____` | `____` | `____` |
+| `disability_pct` | `____` | `____` | `____` | `____` |
+
+# Variable explanations
+
+## Poverty rate (worked example — read this, then do the others)
+
+**What it is.** The poverty rate here is `poverty_count / poverty_universe` from
+ACS table B17001: the number of people with income below the federal poverty
+level, divided by the population for whom poverty status is determined.
+
+**What it is not.** It is not the share of *all* residents in poverty — the
+denominator excludes people for whom poverty status is not determined (for
+example, most people living in institutional group quarters, and children in
+some living arrangements). It is not a measure of hardship depth: a tract just
+below and just above the line look identical in the count, and the federal
+threshold does not adjust for local cost of living.
+
+**Uncertainty.** As a 5-year ACS estimate it carries a margin of error that can
+be large in small-population tracts; the rate inherits uncertainty from both the
+numerator and the denominator. Treat a single tract's value as an estimate, not
+a fact.
+
+**Fitness for our purpose.** Poverty is a reasonable *component* of community
+need for primary-care priority, but it is not the same construct — a low-poverty
+tract can still have poor access, and poverty correlates with other things
+(rurality, age) we must not double-count. Use it as one input, not the answer.
+
+```{r poverty-summary}
+acs |>
+  summarise(
+    n_tracts = n(),
+    n_missing = sum(is.na(poverty_rate)),
+    median = median(poverty_rate, na.rm = TRUE),
+    min = min(poverty_rate, na.rm = TRUE),
+    max = max(poverty_rate, na.rm = TRUE)
+  )
+```
+
+## No-vehicle rate
+
+<!-- TODO: write it to the same standard: what it is, what it is not,
+uncertainty, fitness for purpose. Add a small summary chunk like the one above. -->
+
+## Uninsured (%)
+
+<!-- TODO. Note: this came pre-computed as a percent from a subject table. What
+denominator is hidden inside it, and why does that matter here? -->
+
+## Age 65+ (%) and Disability (%)
+
+<!-- TODO. For each: what it measures, what it does not, fitness for purpose. -->
+
+# Descriptive maps
+
+<!-- TODO: include your saved maps (or regenerate them here). For each, one
+sentence on what to notice and one on what the map might wrongly suggest. -->
+
+# Weaknesses and fitness for purpose
+
+A structured audit. For each item, answer: **What does it measure? What does it
+*not*? Who is mismeasured, miscounted, or missing? Is it fit for deciding
+primary-care priority?**
+
+- **ACS estimates in small tracts.** <!-- TODO -->
+- **Rates vs. hidden denominators (the subject-table percents).** <!-- TODO -->
+- **HRSA points.** Is a "site" a place where care is delivered, an
+  administrative address, or a mailing address? Do all rows have coordinates?
+  What does a dot *not* tell you about capacity, hours, cost, or who is served?
+  <!-- TODO -->
+- **Point vs. areal representation.** <!-- TODO: what does overlaying points on
+  tract averages tempt a reader to conclude that the data cannot support? -->
+- **Whom does this data make invisible?** <!-- TODO -->
+
+# Reproducibility note
+
+<!-- TODO: list your scripts in run order and confirm a fresh-session rerun
+rebuilds the processed data, the maps, and this document from the raw downloads,
+with no manual steps and no committed API key. -->
