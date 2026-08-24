@@ -190,6 +190,15 @@ choropleths and ColorBrewer palettes you saw in earlier courses. Here you will
 put the poverty rate into five classes and color them with a ColorBrewer
 palette.
 
+## Why class at all?
+
+The eye is poor at reading exact values off a continuous ramp — it can reliably
+tell apart only about five to seven shades of one color, so tracts with similar
+rates look identical and nearby shades are easily confused. Classing works with
+that limit: a few distinct colors, each matched to a legend swatch, let the
+reader sort every tract into a bin at a glance. The cost is that variation inside
+a class disappears — which is why where you set the breaks is a real choice.
+
 ## Put the rate on a percentage scale
 
 Your `poverty_rate` is a fraction (e.g. `0.12`). Class boundaries read more
