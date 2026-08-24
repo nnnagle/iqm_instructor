@@ -3,6 +3,7 @@
 
 library(tidyverse)
 library(sf)
+library(RColorBrewer)   # ColorBrewer palettes for classed maps
 
 # Make large numbers easier to read in the Console.
 options(scipen = 999)
