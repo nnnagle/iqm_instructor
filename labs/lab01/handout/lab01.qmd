@@ -67,7 +67,7 @@ reproducible: you can run it again from a clean session and get the same result.
 
 1. Open `GEOG415_Lab1.Rproj`. The title bar should show the project name.
 2. Open `00_setup.R`. You might see a yellow banner at the top of the Console that says "Package tidyverse required but is not installed". If so, then click Install and wait until it finishes.
-3) Run the 00_setup file (Ctrl/Cmd + Enter runs the current line).
+3. Run the `00_setup.R` file (Ctrl/Cmd + Enter runs the current line).
 
 `00_setup.R` loads the packages today needs:
 
@@ -135,8 +135,8 @@ The two files share a key: **`GEOID`**, the tract identifier. A **join** matches
 rows by that key so each polygon gets its poverty rate. Before you can join, however, you need to make sure that the data are the same data type. Use `glimpse(acs)` and `glimpse(tracts)`.  You'll see that that the GEOID field is a character field in tracts, but a numeric field in acs. We'll have to conver the numeric one to character.
 
 ```r
-acs <- acs |> 
-  mutate(acs, GEOID = as.character(GEOID))
+acs <- acs |>
+  mutate(GEOID = as.character(GEOID))
 ```
 
 Now we can go ahead and joint the acs data to the tracts data.
