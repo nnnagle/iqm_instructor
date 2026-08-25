@@ -32,6 +32,13 @@ config <- list(
   acs_year   = NA_integer_,
   tiger_year = NA_integer_,   # defaults to acs_year when NA
 
+  # ---- Tract geometry source ------------------------------------------------
+  # "cb"    = Census cartographic-boundary tracts (generalized, water-clipped):
+  #           smaller and cleaner for choropleths — the Lab 1 default.
+  # "tiger" = full TIGER/Line tracts: precise boundaries, larger files.
+  tract_boundary = "cb",
+  cb_resolution  = "500k",    # "500k", "5m", or "20m"; used only when "cb"
+
   # ---- Candidate ACS variables ----------------------------------------------
   # The canonical ACS pull carries the full candidate set for the semester.
   # Each lab's manifest selects the slice that lab distributes; Lab 1, for

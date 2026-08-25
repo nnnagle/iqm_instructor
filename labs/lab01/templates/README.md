@@ -36,7 +36,7 @@ not included in the starter CSV.
 
 ### `data_raw/tn_tracts.gpkg`
 
-Source: U.S. Census Bureau, {{TIGER_YEAR}} TIGER/Line Census Tracts.
+Source: U.S. Census Bureau, {{TIGER_YEAR}} {{TRACT_SOURCE}}.
 GeoPackage layer: `tn_tracts`
 
 Fields:
@@ -56,5 +56,5 @@ saved as new outputs in `data_processed/`.
 ## Provenance
 
 - ACS vintage: {{ACS_YEAR}}
-- TIGER/Line vintage: {{TIGER_YEAR}}
+- Tract geometry: {{TRACT_SOURCE}}, {{TIGER_YEAR}}
 - State: {{STATE_NAME}} (FIPS {{STATE_FIPS}})

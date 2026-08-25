@@ -68,12 +68,19 @@ for (tmpl in manifest$root_templates) {
 acs_year   <- config$acs_year
 tiger_year <- if (is.na(config$tiger_year)) config$acs_year else config$tiger_year
 
+tract_source_desc <- if (identical(config$tract_boundary, "tiger")) {
+  "TIGER/Line Census Tracts"
+} else {
+  "Cartographic Boundary Census Tracts (generalized)"
+}
+
 readme_tmpl <- readLines(file.path(lab_dir, "templates", "README.md"), encoding = "UTF-8")
 readme <- readme_tmpl
-readme <- gsub("{{ACS_YEAR}}",    acs_year,          readme, fixed = TRUE)
-readme <- gsub("{{TIGER_YEAR}}",  tiger_year,        readme, fixed = TRUE)
-readme <- gsub("{{STATE_NAME}}",  config$state_name, readme, fixed = TRUE)
-readme <- gsub("{{STATE_FIPS}}",  config$state_fips, readme, fixed = TRUE)
+readme <- gsub("{{ACS_YEAR}}",     acs_year,          readme, fixed = TRUE)
+readme <- gsub("{{TIGER_YEAR}}",   tiger_year,        readme, fixed = TRUE)
+readme <- gsub("{{TRACT_SOURCE}}", tract_source_desc, readme, fixed = TRUE)
+readme <- gsub("{{STATE_NAME}}",   config$state_name, readme, fixed = TRUE)
+readme <- gsub("{{STATE_FIPS}}",   config$state_fips, readme, fixed = TRUE)
 write_lines_utf8(readme, file.path(root, "README.md"))
 
 
@@ -98,7 +105,7 @@ write_lines_utf8(
     paste0("Academic year: ", config$academic_year),
     paste0("State: ", config$state_name, " (", config$state_fips, ")"),
     paste0("ACS 5-year vintage: ", acs_year),
-    paste0("TIGER/Line vintage: ", tiger_year),
+    paste0("Tract geometry: ", tract_source_desc, " (", tiger_year, ")"),
     paste0("ACS rows shipped: ", nrow(acs_lab1)),
     paste0("Geography rows shipped: ", nrow(tracts)),
     paste0("Geography without ACS: ", length(geo_no_acs)),
