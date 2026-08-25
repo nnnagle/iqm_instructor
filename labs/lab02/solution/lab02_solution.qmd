@@ -33,8 +33,15 @@ library(tidycensus)
 library(sf)
 
 YEAR         <- 2022                     # <-- pin to class vintage
-HRSA_CSV_URL <- "PASTE_EXACT_HRSA_URL"   # <-- pin the exact download URL
 STATE        <- "47"                     # Tennessee
+
+# Health Center Service Delivery and Look-Alike Sites (HRSA/BPHC).
+HRSA_CSV_URL <- "https://data.hrsa.gov/DataDownload/DD_Files/Health_Center_Service_Delivery_and_LookAlike_Sites.csv"
+
+# HRSA coordinate columns: X is longitude, Y is latitude.
+HRSA_LON <- "Geocoding Artifact Address Primary X Coordinate"
+HRSA_LAT <- "Geocoding Artifact Address Primary Y Coordinate"
+HRSA_ST  <- "Site State Abbreviation"
 
 census_api_key(Sys.getenv("CENSUS_API_KEY"))
 stopifnot(nzchar(Sys.getenv("CENSUS_API_KEY")))
@@ -97,11 +104,10 @@ readr::write_csv(acs, "data_processed/analytic_v1.csv")
 download.file(HRSA_CSV_URL, "data_raw/hrsa_health_centers.csv", mode = "wb")
 hrsa <- readr::read_csv("data_raw/hrsa_health_centers.csv")
 
-# Column names vary by download — inspect and adjust these three.
 hrsa_tn <- hrsa |>
-  filter(.data[["State"]] == "TN") |>
-  filter(!is.na(.data[["Longitude"]]), !is.na(.data[["Latitude"]])) |>
-  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+  filter(.data[[HRSA_ST]] == "TN") |>
+  filter(!is.na(.data[[HRSA_LON]]), !is.na(.data[[HRSA_LAT]])) |>
+  st_as_sf(coords = c(HRSA_LON, HRSA_LAT), crs = 4326)
 ```
 
 ## Join and map

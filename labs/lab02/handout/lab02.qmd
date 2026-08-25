@@ -177,26 +177,31 @@ federally funded health centers. Download the CSV from the HRSA Data Warehouse
 is provenance, not bookkeeping.
 
 ```r
-# Save the CSV into data_raw/ (paste the exact URL from the HRSA download page).
-download.file(
-  url      = "PASTE_HRSA_CSV_URL_HERE",
-  destfile = "data_raw/hrsa_health_centers.csv",
-  mode     = "wb"
-)
+# Health Center Service Delivery and Look-Alike Sites (HRSA/BPHC).
+hrsa_url <- "https://data.hrsa.gov/DataDownload/DD_Files/Health_Center_Service_Delivery_and_LookAlike_Sites.csv"
+
+download.file(hrsa_url, "data_raw/hrsa_health_centers.csv", mode = "wb")
 
 hrsa <- readr::read_csv("data_raw/hrsa_health_centers.csv")
-glimpse(hrsa)   # find the state, latitude, and longitude columns
+glimpse(hrsa)   # look at the column names — HRSA's are long and literal
 ```
 
-Filter to Tennessee and turn the rows into map points. Column names vary by
-download, so inspect first and adjust:
+Record `hrsa_url` and today's date in your source inventory. Then filter to
+Tennessee and turn the rows into map points. HRSA's column names are verbose;
+the coordinates live in these two columns (X is longitude, Y is latitude), and
+the state is `Site State Abbreviation`:
 
 ```r
 library(sf)
 
 hrsa_tn <- hrsa |>
-  filter(State == "TN") |>
-  st_as_sf(coords = c("Longitude", "Latitude"), crs = 4326)
+  filter(`Site State Abbreviation` == "TN") |>
+  st_as_sf(
+    coords = c("Geocoding Artifact Address Primary X Coordinate",   # longitude
+               "Geocoding Artifact Address Primary Y Coordinate"),  # latitude
+    crs = 4326,
+    na.fail = FALSE   # some rows have no coordinates — keep going, note how many
+  )
 ```
 
 ## Discuss first
