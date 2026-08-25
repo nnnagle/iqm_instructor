@@ -60,10 +60,13 @@ find_latest_acs5_year <- function(state_fips) {
     )
     message("Checking ACS 5-year vintage ", yr, " ...")
 
-    ok <- tryCatch({
+    # Probing a not-yet-released vintage 404s, which signals a connection
+    # warning before the error is caught. That is expected here, so keep it
+    # quiet — only a genuinely available vintage should surface.
+    ok <- suppressWarnings(tryCatch({
       df <- read_census_json(test_url)
       nrow(df) >= 1L && "NAME" %in% names(df)
-    }, error = function(e) FALSE)
+    }, error = function(e) FALSE))
 
     if (isTRUE(ok)) return(yr)
   }
