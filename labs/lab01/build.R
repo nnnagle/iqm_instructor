@@ -6,6 +6,13 @@
 # dist/<year>/GEOG415_Lab1/ plus a matching .zip.
 # ==============================================================================
 
+# Lab 1 needs the canonical pinned data, which the driver builds first, so it
+# must be run through the driver rather than sourced directly.
+if (!exists("config") || !exists("canonical") || is.null(canonical)) {
+  stop("Run Lab 1 via the driver:\n  Rscript build.R lab01\n",
+       "(it builds the canonical pinned data this lab needs).", call. = FALSE)
+}
+
 lab_dir <- file.path("labs", "lab01")
 source(file.path(lab_dir, "manifest.R"), local = TRUE)
 

@@ -7,6 +7,14 @@
 # GEOG415_Lab1 project.
 # ==============================================================================
 
+# Runs either via the top-level driver (`Rscript build.R lab02`) or directly
+# (`Rscript labs/lab02/build.R`). Run from the repository root. Lab 2 needs no
+# canonical data, so it can bootstrap config + helpers on its own.
+if (!exists("config")) {
+  source("config.R")
+  for (f in list.files("R", full.names = TRUE, pattern = "\\.R$")) source(f)
+}
+
 lab_dir <- file.path("labs", "lab02")
 source(file.path(lab_dir, "manifest.R"), local = TRUE)
 
