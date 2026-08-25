@@ -80,6 +80,19 @@ A **package** is a bundle of extra functions. `library()` switches one on for
 this session. If R says a package is not installed, install it once with
 `install.packages("tidyverse")` and try again.
 
+# Your project folder
+
+This folder is your project for the **whole semester** — you keep working in it
+lab after lab, never starting over. Open `PROJECT_STRUCTURE.md` (in this folder)
+and skim it now. Two things to take away:
+
+- **Always open the `.Rproj` and use relative paths** (`"data_raw/…"`), never a
+  full `C:\` or `/Users/` path. That's what makes the project run on any machine.
+- The folders (`data_raw/`, `data_processed/`, `R/`, `figures/`, `tables/`,
+  `metadata/`, `report/`) are the **same layout your team project uses**, so work
+  copies cleanly between your project and the team's. `data_raw/` is read-only —
+  everything else is built by your scripts.
+
 # Create your Lab 1 script
 
 Create a new script (File → New File → R Script) and save it as `01_get_data.R` (File → Save as)

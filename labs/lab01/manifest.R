@@ -15,14 +15,17 @@ manifest <- list(
   # (Later labs distribute increments into the project students already have.)
   delivery = "project",
 
-  # Standard student folder skeleton.
+  # Standard student folder skeleton. This is the CANONICAL project structure,
+  # identical for an individual project and the team project, so files copy
+  # cleanly between them (see PROJECT_STRUCTURE.md).
   student_dirs = c(
     "data_raw",
     "data_processed",
     "figures",
     "metadata",
     "R",
-    "tables"
+    "tables",
+    "report"
   ),
 
   # ACS columns Lab 1 ships. The canonical ACS carries the full candidate set;
@@ -45,7 +48,9 @@ manifest <- list(
 
   # Files copied verbatim from templates/ into the project root.
   root_templates = c(
-    "00_setup.R"
+    "00_setup.R",
+    "PROJECT_STRUCTURE.md",   # canonical layout + individual<->team mirror rules
+    "CHANGELOG.md"            # one line per lab: what changed
     # README.md is generated from templates/README.md with vintages filled in.
   ),
 
