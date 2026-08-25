@@ -53,7 +53,9 @@ of you should register your own — sharing keys is both against the terms and a
 reproducibility problem (the next person cannot rerun your code).
 
 1. Request a key: <https://api.census.gov/data/key_signup.html>. It arrives by
-   email, usually within minutes.
+   email, usually within minutes. **Use your university (`.edu`) email address** —
+   an institutional address may skip an extra verification step, and in any case
+   keeps this course account separate from your personal mail.
 2. Store it where R can find it, in a file called `.Renviron` in your home
    directory. The reliable, works-on-every-OS way:
 
