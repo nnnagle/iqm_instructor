@@ -1,0 +1,68 @@
+---
+title: "GEOG 415 — Exploratory Analysis Brief"
+subtitle: "Community Primary Care Priority Rating — Module 2"
+author: "Team: ___"
+date: today
+format:
+  html:
+    toc: true
+    number-sections: true
+  pdf:
+    toc: true
+    number-sections: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+<!--
+Fill in each section. Aim for 4–6 figures TOTAL with a sentence or two of
+interpretation each — not every plot you made, just the ones that support a
+decision. The document must render from a fresh session using the files in your
+project.
+-->
+
+```{r setup}
+library(tidyverse)
+library(sf)
+
+d      <- readr::read_csv("data_raw/tn_tract_analysis.csv", show_col_types = FALSE)
+tracts <- sf::st_read("data_raw/tn_tracts.gpkg", quiet = TRUE)
+tj     <- tracts |> left_join(d, by = "GEOID")
+```
+
+# Question
+
+<!-- TODO: one line — what are you deciding in this brief? (Which indicators
+belong in the rating, and why.) -->
+
+# Distributions
+
+<!-- TODO: a distribution figure + a sentence on skew / suspicious values. -->
+
+# Associations and redundancy
+
+<!-- TODO: a correlation figure or matrix + which pairs are redundant vs distinct. -->
+
+# Geography
+
+<!-- TODO: at least two indicator maps + what clusters where. -->
+
+# Relationship across geographic context
+
+<!-- TODO: the metro / non-metro comparison + what it implies for the rating. -->
+
+# Scale and the ecological fallacy (tract vs county)
+
+<!-- TODO: the correct county aggregation (sum numerator/denominator), a
+comparison of the story at each scale, and one tract whose story changes. -->
+
+# Outliers as places
+
+<!-- TODO: a few extreme tracts, what places they are, and how you'll treat them. -->
+
+# Indicator decisions (summary)
+
+<!-- TODO: 2–3 sentences summarizing which indicators you keep and drop. The
+per-variable reasoning goes in metadata/indicator_decisions.md. -->

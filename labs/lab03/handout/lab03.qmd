@@ -1,0 +1,237 @@
+---
+title: "GEOG 415 — Lab 3"
+subtitle: "Explore, compare, and choose indicators"
+format:
+  pdf:
+    toc: true
+    number-sections: true
+    geometry: margin=1in
+  html:
+    toc: true
+    number-sections: true
+execute:
+  eval: false
+  echo: true
+---
+
+# Where this lab fits
+
+Module 2 asks **"what varies with what?"** You now have a set of candidate need
+indicators. This lab is where you actually *look* at them — their distributions,
+how they relate to each other, and how they behave across geography — and then
+make a defensible decision about **which ones belong in the rating** and which
+are redundant or off-target. You are not building the score yet (that's next
+lab); you are choosing its ingredients and writing down why.
+
+The two habits from earlier labs still apply and are still graded:
+**reproducibility** (every figure and number comes from code) and **fitness for
+purpose** (an indicator that correlates with need is not automatically a good
+*measure* of it).
+
+## Discuss first (before any code)
+
+With your team, write one sentence each:
+
+1. Before you plot anything: which two indicators do you *expect* to move
+   together, and why?
+2. Name one indicator you suspect mostly restates another (so the rating might
+   be double-counting the same thing).
+
+# Add this week's files to your project
+
+Same drag-in workflow as Lab 2. This week's `project_files.zip` contains three
+files for your `GEOG415_Project`:
+
+- `data_raw/tn_tract_analysis.csv` — an **analysis-ready** tract dataset,
+- `report/eda_brief.qmd` — your Exploratory Analysis Brief skeleton,
+- `metadata/indicator_decisions.md` — your keep/drop memo skeleton.
+
+Move the zip into your project folder, double-click to unzip, open the
+`project_files` folder, and drag each file into the **matching** folder of your
+project (e.g. `tn_tract_analysis.csv` → your `data_raw/`). Then delete the
+leftover `project_files` folder and the zip.
+
+**About the provided dataset.** We give you a clean, analysis-ready file so this
+lab does not depend on your Lab 2 being perfect — everyone starts from the same
+place. It holds the candidate indicators as rates/percents *and* the underlying
+counts. Use `data_raw/tn_tract_analysis.csv` for this lab. (If your own Lab 2
+dataset is solid, keep it — but do the graded work on the provided file so
+results are comparable.)
+
+# Get oriented
+
+```r
+library(tidyverse)
+library(sf)
+
+d <- read_csv("data_raw/tn_tract_analysis.csv")
+glimpse(d)
+```
+
+Notice two kinds of column: **rates/percents** you will analyze
+(`poverty_rate`, `novehicle_rate`, `uninsured_pct`, `age65_pct`,
+`disability_pct`), and the **counts behind some of them** (`poverty_count`,
+`poverty_universe`, `novehicle_count`, `households`). The counts matter later.
+
+# Distributions
+
+Look at every candidate before trusting any of it.
+
+```r
+d |>
+  select(poverty_rate, novehicle_rate, uninsured_pct, age65_pct, disability_pct) |>
+  pivot_longer(everything(), names_to = "indicator", values_to = "value") |>
+  ggplot(aes(value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(~ indicator, scales = "free") +
+  theme_minimal()
+```
+
+Concise summaries:
+
+```r
+d |>
+  summarise(across(
+    c(poverty_rate, novehicle_rate, uninsured_pct, age65_pct, disability_pct),
+    list(median = ~median(.x, na.rm = TRUE),
+         min    = ~min(.x, na.rm = TRUE),
+         max    = ~max(.x, na.rm = TRUE)),
+    .names = "{.col}_{.fn}"
+  ))
+```
+
+Which indicators are skewed? Any impossible or suspicious values? Note them.
+
+# Associations and redundancy
+
+```r
+# One pair, up close:
+ggplot(d, aes(poverty_rate, uninsured_pct)) +
+  geom_point(alpha = 0.4) +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_minimal()
+
+# All pairs at once:
+d |>
+  select(poverty_rate, novehicle_rate, uninsured_pct, age65_pct, disability_pct) |>
+  cor(use = "pairwise.complete.obs") |>
+  round(2)
+```
+
+For each strongly correlated pair, decide: do they carry **distinct
+information**, or is one mostly restating the other? Two indicators that are
+nearly the same thing shouldn't both go into the rating with full weight.
+
+# Map two indicators
+
+Join to the tract geometry you already have from Lab 1 and map two indicators as
+classed choropleths (reuse your Lab 1 approach).
+
+```r
+tracts <- st_read("data_raw/tn_tracts.gpkg")
+tj <- tracts |> left_join(d, by = "GEOID")
+
+ggplot(tj) +
+  geom_sf(aes(fill = poverty_rate), color = NA) +
+  scale_fill_viridis_c(na.value = "grey90") +
+  labs(title = "Poverty rate") + theme_minimal()
+```
+
+Where do high values cluster? Do two indicators light up the *same* places, or
+different ones? Save the maps to `figures/`.
+
+# Compare a relationship across geographic context
+
+A relationship can differ between kinds of place. Make a simple **metro /
+non-metro** split using county codes (the first 5 characters of `GEOID`), then
+compare one relationship across the two groups. Tennessee's largest metro
+counties include Davidson (`47037`), Shelby (`47157`), Knox (`47093`), and
+Hamilton (`47065`).
+
+```r
+d <- d |>
+  mutate(metro = if_else(county_geoid %in% c("47037","47157","47093","47065"),
+                         "metro", "non-metro"))
+
+d |>
+  group_by(metro) |>
+  summarise(cor_pov_unins = cor(poverty_rate, uninsured_pct,
+                                use = "pairwise.complete.obs"))
+```
+
+Is the association the same in metro and non-metro tracts? What would it mean for
+the rating if it isn't?
+
+# Scale changes the answer: aggregate to county
+
+Now see what happens when you change the spatial unit. Aggregate the tracts up to
+**county** and recompute the poverty rate. The right way is to **sum the
+numerator and denominator, then divide** — not to average the tract rates
+(averaging ignores that tracts hold different numbers of people).
+
+```r
+county <- d |>
+  group_by(county_geoid) |>
+  summarise(
+    poverty_count    = sum(poverty_count, na.rm = TRUE),
+    poverty_universe = sum(poverty_universe, na.rm = TRUE)
+  ) |>
+  mutate(poverty_rate_county = poverty_count / poverty_universe)
+```
+
+Compare that to the **wrong** way, and see how far apart they can be:
+
+```r
+wrong <- d |>
+  group_by(county_geoid) |>
+  summarise(poverty_rate_avg = mean(poverty_rate, na.rm = TRUE))
+
+county |> left_join(wrong, by = "county_geoid")
+```
+
+Then look at a relationship at the county scale versus the tract scale (e.g.
+poverty vs. another indicator) and describe how it changes. Find one **tract**
+whose story disappears or reverses once it's blended into its county — that is
+the **ecological fallacy / MAUP** in your own data.
+
+One more point worth a sentence in your brief: you *cannot* correctly aggregate
+`uninsured_pct`, `age65_pct`, or `disability_pct` this way, because they arrived
+as pre-computed percents with no numerator/denominator. That is exactly why
+transparent counts matter.
+
+# Outliers as places, not rows
+
+Find a few extreme tracts and ask *what place is this?*
+
+```r
+d |> slice_max(poverty_rate, n = 5)
+d |> filter(total_population < 200) |> arrange(desc(poverty_rate))
+```
+
+Small-population tracts, university areas, and institutional group quarters
+often produce extreme rates for reasons that have little to do with community
+need. Note any you'd treat with caution.
+
+# Narrow the indicator set
+
+Open `metadata/indicator_decisions.md` and, for **each** candidate, record
+**keep or drop and why** — citing what you found above (redundancy, geographic
+behavior, fitness for measuring primary-care need). This memo is graded as much
+as the figures.
+
+# Reproducibility check
+
+Restart R and run your Lab 3 script from the top. It should rebuild every figure
+and the numbers in your brief from `data_raw/tn_tract_analysis.csv` with no
+manual steps. Add a `CHANGELOG.md` line for Lab 3.
+
+# What to turn in (Lab 3)
+
+- **`report/eda_brief.qmd`**, rendered — 4–6 figures with interpretation,
+  including the metro/non-metro comparison and the tract-vs-county (MAUP) result.
+- **`metadata/indicator_decisions.md`** — keep/drop with explicit reasons.
+- Saved figures in `figures/`.
+
+Together these are the exploratory half of the Module 2 deliverable
+(**Exploratory Analysis & Rating Specification**); next lab you build Rating v0.1
+from the indicators you just defended.

@@ -31,6 +31,7 @@ build.R               # driver: builds canonical data, then each lab -> dist/
 R/                    # shared helpers (Census API, IO, packaging)
 data/
   acs.R  tiger.R      # acquire + clean each public source -> data/processed/<year>/
+  analytic.R          # analysis-ready candidate-indicator table (shipped in Lab 3)
   build/<year>/       # raw downloads + provenance (git-ignored)
   processed/<year>/   # cleaned canonical data, shared by all labs
 labs/

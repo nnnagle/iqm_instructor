@@ -1,0 +1,110 @@
+---
+title: "GEOG 415 — Lab 3 SOLUTION / TA answer key"
+subtitle: "Exploratory analysis of the analysis-ready dataset"
+format:
+  html:
+    toc: true
+execute:
+  eval: false     # set TRUE once data_raw/tn_tract_analysis.csv + tn_tracts.gpkg are present
+  echo: true
+---
+
+<!--
+INSTRUCTOR / TA ONLY — not distributed to students.
+
+Reference run for Lab 3. Uses the provided analysis-ready dataset
+(tn_tract_analysis.csv, built by data/analytic.R and shipped in the Lab 3
+increment) joined to tn_tracts.gpkg from Lab 1. Run from inside a project that
+has both files in data_raw/.
+-->
+
+```{r setup}
+library(tidyverse)
+library(sf)
+
+d      <- readr::read_csv("data_raw/tn_tract_analysis.csv", show_col_types = FALSE)
+tracts <- sf::st_read("data_raw/tn_tracts.gpkg", quiet = TRUE)
+tj     <- tracts |> left_join(d, by = "GEOID")
+
+candidates <- c("poverty_rate","novehicle_rate","uninsured_pct","age65_pct","disability_pct")
+```
+
+## Distributions
+
+```{r dist}
+d |>
+  select(all_of(candidates)) |>
+  pivot_longer(everything(), names_to = "indicator", values_to = "value") |>
+  ggplot(aes(value)) +
+  geom_histogram(bins = 30) +
+  facet_wrap(~ indicator, scales = "free") +
+  theme_minimal()
+```
+
+## Correlations / redundancy
+
+```{r cor}
+d |> select(all_of(candidates)) |> cor(use = "pairwise.complete.obs") |> round(2)
+```
+
+Expect poverty, uninsured, and no-vehicle to be moderately-to-strongly related
+(shared deprivation), while age65 and disability track each other and are
+partly distinct from the economic cluster — the discussion students should have.
+
+## Maps
+
+```{r maps}
+ggplot(tj) + geom_sf(aes(fill = poverty_rate), color = NA) +
+  scale_fill_viridis_c(na.value = "grey90") + theme_minimal()
+```
+
+## Context: metro vs non-metro
+
+```{r context}
+d <- d |>
+  mutate(metro = if_else(county_geoid %in% c("47037","47157","47093","47065"),
+                         "metro", "non-metro"))
+d |> group_by(metro) |>
+  summarise(cor_pov_unins = cor(poverty_rate, uninsured_pct, use = "pairwise.complete.obs"),
+            n = n())
+```
+
+## Scale: tract vs county (the MAUP point)
+
+```{r maup}
+county_right <- d |>
+  group_by(county_geoid) |>
+  summarise(poverty_count = sum(poverty_count, na.rm = TRUE),
+            poverty_universe = sum(poverty_universe, na.rm = TRUE)) |>
+  mutate(poverty_rate_county = poverty_count / poverty_universe)
+
+county_wrong <- d |>
+  group_by(county_geoid) |>
+  summarise(poverty_rate_avg = mean(poverty_rate, na.rm = TRUE))
+
+# How far the wrong (mean-of-rates) method drifts from the right one:
+county_right |>
+  left_join(county_wrong, by = "county_geoid") |>
+  mutate(diff = poverty_rate_avg - poverty_rate_county) |>
+  arrange(desc(abs(diff)))
+```
+
+## Outliers as places
+
+```{r outliers}
+d |> slice_max(poverty_rate, n = 5) |> select(GEOID, tract_name, total_population, poverty_rate)
+d |> filter(total_population < 200) |> arrange(desc(poverty_rate)) |>
+  select(GEOID, tract_name, total_population, poverty_rate)
+```
+
+## Grading notes
+
+- **Aggregation:** full credit requires summing numerator/denominator, not
+  averaging rates; strong answers show the two differ and explain why
+  (population weighting). Bonus for noting the subject-table percents
+  (`uninsured_pct`, `age65_pct`, `disability_pct`) *cannot* be re-aggregated.
+- **Redundancy:** expect an explicit call on at least one correlated pair.
+- **Fitness:** decisions must argue about measuring *primary-care need*, not just
+  statistical correlation.
+- **Places, not rows:** outliers discussed as real tracts (small population,
+  group quarters) rather than anonymous extreme values.

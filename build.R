@@ -19,6 +19,7 @@
 
 source("config.R")
 for (f in list.files("R", full.names = TRUE, pattern = "\\.R$")) source(f)
+source("data/analytic.R")
 
 required_pkgs <- c("sf", "dplyr", "readr", "jsonlite")
 missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
@@ -105,8 +106,8 @@ if (length(unknown_flags) > 0) {
        "\nUsage: Rscript build.R [lab01 lab02 ...] [--overwrite]", call. = FALSE)
 }
 
-implemented_labs  <- c("lab01", "lab02")
-labs_needing_data <- c("lab01")   # labs that draw on the canonical pinned data
+implemented_labs  <- c("lab01", "lab02", "lab03")
+labs_needing_data <- c("lab01")   # labs that draw on the canonical pinned data (ACS + tracts)
 labs <- if (length(lab_args) > 0) lab_args else implemented_labs
 
 # Build the canonical data only if a requested lab actually needs it, so
@@ -117,7 +118,19 @@ if (any(labs %in% labs_needing_data)) {
   canonical <- build_canonical_data(config)
   config <- canonical$cfg
 } else {
-  message("No requested lab needs canonical data; skipping the data build.")
+  message("No canonical (ACS/tracts) data needed for the requested labs.")
+}
+
+# Lab 3 ships an analysis-ready tract dataset (built once, reused if present).
+analytic <- NULL
+if ("lab03" %in% labs) {
+  analytic_path <- file.path(config$processed_dir,
+                             sprintf("%s_tract_analysis.csv", config$state_slug))
+  analytic <- if (file.exists(analytic_path)) {
+    message("Reusing analysis-ready dataset: ", analytic_path); analytic_path
+  } else {
+    analytic_build(config)
+  }
 }
 
 for (lab in labs) {
