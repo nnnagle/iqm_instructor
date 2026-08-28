@@ -4,8 +4,9 @@
 # GEOG 415 instructor build driver.
 #
 # Usage:
-#   Rscript build.R            # build all labs (currently: lab01)
-#   Rscript build.R lab01      # build a single lab
+#   Rscript build.R                 # build all implemented labs
+#   Rscript build.R lab01           # build a single lab
+#   Rscript build.R lab01 --overwrite   # replace an existing student package
 #
 # What it does:
 #   1. Loads config.R and every helper in R/.
@@ -91,10 +92,22 @@ build_canonical_data <- function(cfg) {
 # Build requested labs.
 # ------------------------------------------------------------------------------
 
-args <- commandArgs(trailingOnly = TRUE)
+args  <- commandArgs(trailingOnly = TRUE)
+flags <- args[startsWith(args, "--")]
+lab_args <- args[!startsWith(args, "--")]
+
+# --overwrite replaces an existing student package instead of stopping.
+if ("--overwrite" %in% flags) config$overwrite <- TRUE
+
+unknown_flags <- setdiff(flags, "--overwrite")
+if (length(unknown_flags) > 0) {
+  stop("Unknown flag(s): ", paste(unknown_flags, collapse = " "),
+       "\nUsage: Rscript build.R [lab01 lab02 ...] [--overwrite]", call. = FALSE)
+}
+
 implemented_labs  <- c("lab01", "lab02")
 labs_needing_data <- c("lab01")   # labs that draw on the canonical pinned data
-labs <- if (length(args) > 0) args else implemented_labs
+labs <- if (length(lab_args) > 0) lab_args else implemented_labs
 
 # Build the canonical data only if a requested lab actually needs it, so
 # `Rscript build.R lab02` does not trigger an ACS/TIGER download or require a
