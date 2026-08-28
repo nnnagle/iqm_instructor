@@ -1,27 +1,24 @@
 # ==============================================================================
 # Lab 2 manifest — "Acquire, describe, and audit the data"
 #
-# Lab 2 ships NO data. Students pull ACS themselves (tidycensus) and download
-# the HRSA facility CSV, into the project they already have from Lab 1. This lab
-# distributes only the handout plus a couple of templates, as an increment that
-# unzips into the existing project.
+# Lab 2 ships NO data and NO project. Students pull ACS themselves (tidycensus)
+# and download the HRSA CSV into the project they already have from Lab 1. This
+# lab distributes a handout (separate PDF) plus a small set of files that are
+# ADDED to the existing project at fixed project-relative paths.
 # ==============================================================================
 
 manifest <- list(
 
   id           = "lab02",
   title        = "GEOG 415 Lab 2 — Acquire, describe, and audit the data",
-  package_name = "GEOG415_Lab2",
 
-  # Increment: unzip these into the existing GEOG415_Lab1 project folder.
-  delivery = "increment",
+  # Handout is reference material, delivered as its own PDF.
+  handout_qmd  = "handout/lab02.qmd",
+  handout_stem = "lab02_handout",
 
-  # Files copied verbatim into the increment (student adds them to the project).
-  root_templates = c(
-    "data_document.qmd",   # the deliverable skeleton students fill in
-    "Renviron.example"     # example env file for the Census API key
-  ),
-
-  # Handout source rendered into the increment at build time.
-  handout_qmd = "handout/lab02.qmd"
+  # Files added to the student's existing project, keyed by their destination
+  # path RELATIVE TO THE PROJECT ROOT (value = source under this lab folder).
+  project_files = c(
+    "report/data_document.qmd" = "templates/data_document.qmd"
+  )
 )

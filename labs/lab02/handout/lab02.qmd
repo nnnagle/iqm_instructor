@@ -46,6 +46,28 @@ document:
    primary-care access?" Name one way a *tract-level* number could be right on
    average but wrong about the people in it.
 
+# Add this week's file to your project
+
+You keep working in the **same `GEOG415_Project` folder** from Lab 1 — you do not
+start a new one. This week you downloaded `project_files.zip`, which contains one
+file to add to your project: `data_document.qmd`, which belongs in the project's
+**`report/`** folder.
+
+Do this — it works the same on Mac and Windows:
+
+1. Move the downloaded **`project_files.zip` into your `GEOG415_Project` folder**
+   (so everything stays in one place).
+2. **Double-click it to unzip.** This creates a folder next to it called
+   `project_files`. (Double-clicking only *unpacks* the zip — it does **not**
+   merge into your existing folders, so nothing is overwritten yet.)
+3. Open the new `project_files` folder. Inside, it mirrors your project's layout
+   — you'll see a `report` folder holding `data_document.qmd`.
+4. **Drag `data_document.qmd` into your project's own `report/` folder.**
+5. Delete the leftover `project_files` folder and the `.zip` — you're done.
+
+Everything else you create this week — downloaded data, scripts, maps — also goes
+in the matching folders of this same project.
+
 # Get a Census API key
 
 The Census API requires a free key so the Bureau can rate-limit requests. Each
@@ -75,7 +97,7 @@ reproducibility problem (the next person cannot rerun your code).
    **macOS** (that is `/Users/<you>/.Renviron`; the leading dot hides it — press
    Cmd+Shift+. in Finder to reveal it), and at `C:\Users\<you>\Documents\.Renviron`
    on **Windows** (run `normalizePath("~")` in R to confirm the exact folder R
-   reads). See the included `Renviron.example` file for the same notes.
+   reads).
 
 3. Confirm R can see it (this should print `TRUE`, and must **not** print your
    key in a document you hand in):
@@ -243,9 +265,10 @@ averages over areas).
 
 # Write the data document
 
-Open the provided `data_document.qmd`, fill it in, and render it. It is a
-Quarto report (like the Lab 1 handout) so its tables and maps are generated from
-your code — the document *is* the evidence that your work is reproducible.
+Open `report/data_document.qmd` (the file you added at the start), fill it in, and
+render it. It is a Quarto report (like the Lab 1 handout) so its tables and maps
+are generated from your code — the document *is* the evidence that your work is
+reproducible.
 
 It must contain:
 

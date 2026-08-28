@@ -9,7 +9,8 @@ manifest <- list(
 
   id           = "lab01",
   title        = "GEOG 415 Lab 1 — R from zero",
-  project_name = "GEOG415_Lab1",
+  project_name = "GEOG415_Project",   # the cumulative project students keep all semester
+  handout_stem = "lab01_handout",
 
   # Lab 1 distributes a FULL project: students open this fresh in RStudio.
   # (Later labs distribute increments into the project students already have.)

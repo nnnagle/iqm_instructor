@@ -1,15 +1,19 @@
 # ==============================================================================
 # Lab 2 assembler.
 #
-# Sourced by ../../build.R with `config` in scope. Lab 2 needs no canonical
-# data. Produces an increment under dist/<year>/GEOG415_Lab2/ (handout +
-# templates) plus a matching .zip that students unzip into their existing
-# GEOG415_Lab1 project.
+# Sourced by ../../build.R with `config` in scope (or run directly — it
+# bootstraps config + helpers). Lab 2 needs no canonical data. Produces, under
+# dist/<year>/lab02/:
+#   lab02_handout.pdf   the handout (reference; distribute on its own)
+#   project_files/      the files students add to their existing project, laid
+#                       out at project-relative paths (e.g. report/…)
+#   project_files.zip   the same, zipped WITH the project_files/ wrapper, so a
+#                       double-click unpacks a clearly-named folder students then
+#                       drag files out of into their project
 # ==============================================================================
 
 # Runs either via the top-level driver (`Rscript build.R lab02`) or directly
-# (`Rscript labs/lab02/build.R`). Run from the repository root. Lab 2 needs no
-# canonical data, so it can bootstrap config + helpers on its own.
+# (`Rscript labs/lab02/build.R`). Run from the repository root.
 if (!exists("config")) {
   source("config.R")
   for (f in list.files("R", full.names = TRUE, pattern = "\\.R$")) source(f)
@@ -18,17 +22,18 @@ if (!exists("config")) {
 lab_dir <- file.path("labs", "lab02")
 source(file.path(lab_dir, "manifest.R"), local = TRUE)
 
-root <- file.path(config$dist_dir, manifest$package_name)
-prepare_output_root(root, config$overwrite)
+out_dir <- file.path(config$dist_dir, "lab02")
+prepare_output_root(out_dir, config$overwrite)
 
-# Templates copied verbatim.
-for (tmpl in manifest$root_templates) {
-  copy_file(file.path(lab_dir, "templates", tmpl), file.path(root, tmpl))
+# Stage the project-additions at their project-relative paths.
+staging <- file.path(out_dir, "project_files")
+for (dest in names(manifest$project_files)) {
+  src <- file.path(lab_dir, manifest$project_files[[dest]])
+  copy_file(src, file.path(staging, dest))
 }
 
-# Handout rendered (or copied if Quarto is unavailable).
-emit_handout(file.path(lab_dir, manifest$handout_qmd), root)
+zip_path <- zip_package(staging)   # -> dist/<year>/lab02/project_files.zip
+emit_handout(file.path(lab_dir, manifest$handout_qmd), out_dir, manifest$handout_stem)
 
-zip_path <- zip_package(root)
-message("Built: ", root)
+message("Built increment: ", staging)
 message("Zipped: ", zip_path)

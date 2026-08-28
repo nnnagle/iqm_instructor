@@ -59,21 +59,26 @@ zip_package <- function(root) {
 }
 
 
-# Render a handout .qmd into `root` as PDF. If Quarto is unavailable or the
-# render fails, copy the .qmd source in instead, so a package is never missing
-# its handout.
-emit_handout <- function(qmd_src, root) {
+# Render a handout .qmd to PDF into `dest_dir`, named <out_stem>.pdf. If Quarto
+# is unavailable or the render fails, copy the .qmd source in instead (as
+# <out_stem>.qmd) so a build is never missing its handout. out_stem defaults to
+# the source file's stem.
+emit_handout <- function(qmd_src, dest_dir, out_stem = NULL) {
+  safe_dir_create(dest_dir)
+  if (is.null(out_stem)) out_stem <- tools::file_path_sans_ext(basename(qmd_src))
+
   if (nzchar(Sys.which("quarto"))) {
     message("Rendering handout with Quarto ...")
     status <- system2("quarto", c("render", shQuote(qmd_src), "--to", "pdf",
-                                  "--output-dir", shQuote(normalizePath(root))))
-    if (status == 0L) return(invisible(root))
-    warning("Quarto render failed; copying the .qmd source into the package instead.")
+                                  "--output", paste0(out_stem, ".pdf"),
+                                  "--output-dir", shQuote(normalizePath(dest_dir))))
+    if (status == 0L) return(invisible(dest_dir))
+    warning("Quarto render failed; copying the .qmd source instead.")
   } else {
-    message("Quarto not found; copying handout source (.qmd) into the package.")
+    message("Quarto not found; copying handout source (.qmd).")
   }
-  copy_file(qmd_src, file.path(root, basename(qmd_src)))
-  invisible(root)
+  copy_file(qmd_src, file.path(dest_dir, paste0(out_stem, ".qmd")))
+  invisible(dest_dir)
 }
 
 

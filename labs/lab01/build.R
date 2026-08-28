@@ -2,8 +2,8 @@
 # Lab 1 assembler.
 #
 # Sourced by ../../build.R with `config` and `canonical` (paths to the pinned
-# canonical data) already in scope. Produces the student package under
-# dist/<year>/GEOG415_Lab1/ plus a matching .zip.
+# canonical data) already in scope. Produces, under dist/<year>/lab01/, the
+# GEOG415_Project/ starter project, its .zip, and the handout PDF.
 # ==============================================================================
 
 # Lab 1 needs the canonical pinned data, which the driver builds first, so it
@@ -16,8 +16,12 @@ if (!exists("config") || !exists("canonical") || is.null(canonical)) {
 lab_dir <- file.path("labs", "lab01")
 source(file.path(lab_dir, "manifest.R"), local = TRUE)
 
-root <- file.path(config$dist_dir, manifest$project_name)
-prepare_output_root(root, config$overwrite)
+# dist/<year>/lab01/ holds everything this lab distributes: the project folder,
+# its zip, and the handout PDF (separate — handouts are not project content).
+out_dir <- file.path(config$dist_dir, "lab01")
+prepare_output_root(out_dir, config$overwrite)
+
+root <- file.path(out_dir, manifest$project_name)
 create_student_skeleton(root, manifest$student_dirs)
 write_rproj(file.path(root, paste0(manifest$project_name, ".Rproj")))
 
@@ -84,16 +88,11 @@ readme <- gsub("{{STATE_FIPS}}",   config$state_fips, readme, fixed = TRUE)
 write_lines_utf8(readme, file.path(root, "README.md"))
 
 
-# ---- Handout: render qmd into the package (fall back to copying source) ------
+# ---- Zip the project, and render the handout separately ---------------------
 
-qmd_src <- file.path(lab_dir, manifest$handout_qmd)
-emit_handout(qmd_src, root)
-
-
-# ---- Zip + provenance record -------------------------------------------------
-
-zip_path <- zip_package(root)
-message("Built: ", root)
+zip_path <- zip_package(root)   # -> dist/<year>/lab01/GEOG415_Project.zip
+emit_handout(file.path(lab_dir, manifest$handout_qmd), out_dir, manifest$handout_stem)
+message("Built project: ", root)
 message("Zipped: ", zip_path)
 
 safe_dir_create(config$build_dir)

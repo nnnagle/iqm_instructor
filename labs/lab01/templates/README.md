@@ -8,7 +8,7 @@ every lab, so keep the folder structure intact.
 
 ## Start here
 
-1. Open `GEOG415_Lab1.Rproj` in RStudio.
+1. Open `GEOG415_Project.Rproj` in RStudio.
 2. Open and run `00_setup.R`.
 3. Follow the Lab 1 handout to write your first script.
 4. Save figures in `figures/` and processed data in `data_processed/`.

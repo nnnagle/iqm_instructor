@@ -13,10 +13,10 @@ labs. See [`docs/`](docs/) for the design and the session-by-session map.
 
 ```
 INPUT (authored, versioned here)          OUTPUT (generated, handed to students)
-  config.R          pinned vintages          dist/<year>/GEOG415_Lab1/   folder
-  data/*.R          acquire + clean          dist/<year>/GEOG415_Lab1.zip
-  labs/<lab>/       handout + templates
-  R/                shared helpers
+  config.R          pinned vintages          dist/<year>/lab01/GEOG415_Project/  (+ .zip)
+  data/*.R          acquire + clean          dist/<year>/lab01/lab01_handout.pdf
+  labs/<lab>/       handout + templates      dist/<year>/lab02/project_files.zip
+  R/                shared helpers           dist/<year>/lab02/lab02_handout.pdf
 ```
 
 `dist/` and `data/build/` are generated and git-ignored. `data/processed/` (the
@@ -84,15 +84,29 @@ to force a re-download.
 4. Rebuild, then verify the package on the classroom R/RStudio setup: open the
    `.Rproj`, run `00_setup.R`, read both data files, do the join, make the first
    map.
-5. Distribute the folder or the `.zip` from `dist/<year>/`.
+5. Distribute from `dist/<year>/lab01/`: the `GEOG415_Project.zip` (or the folder)
+   is the student project; `lab01_handout.pdf` is the handout.
+
+## Distribution model
+
+Each lab's outputs live under `dist/<year>/<lab>/`. Two kinds of thing ship, and
+they are kept separate:
+
+- **The handout** (`<lab>_handout.pdf`) — reference material, delivered on its
+  own. Handouts are never placed inside the student project.
+- **Project content** — Lab 1 ships the whole starter project
+  (`GEOG415_Project.zip`, unzipped once and opened); later labs ship
+  `project_files.zip`, a `project_files/` folder mirroring the project layout
+  that students unpack and drag into the project they already have.
 
 ## Adding a lab
 
 Create `labs/<lab>/` with a `manifest.R`, a `build.R`, `templates/`, and a
 `handout/`. Register the lab in `build.R` (`implemented_labs`), and if it draws
-on the canonical pinned data, add it to `labs_needing_data` there too. Labs after
-Lab 1 distribute *increments* into the project students already have, rather
-than a fresh project (see `labs/lab02/`).
+on the canonical pinned data, add it to `labs_needing_data` there too. An
+increment lab lists its additions in the manifest as `project_files`
+(destination-relative-to-project = source), and its `build.R` stages them under
+`project_files/` and zips that (see `labs/lab02/`).
 
 A lab may also carry a `solution/` folder — an instructor/TA answer key (e.g.
 `labs/lab02/solution/lab02_solution.qmd`). It is versioned here but is **not**

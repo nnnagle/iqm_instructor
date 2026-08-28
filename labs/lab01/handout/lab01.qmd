@@ -22,8 +22,8 @@ public data. Today you set up the project and go from raw data to your first
 map. You are not expected to know any R yet — every new piece is explained the
 first time it appears.
 
-**What you have:** a folder called `GEOG415_Lab1` containing an RStudio project
-(`GEOG415_Lab1.Rproj`), a setup script (`00_setup.R`), two data files in
+**What you have:** a folder called `GEOG415_Project` containing an RStudio project
+(`GEOG415_Project.Rproj`), a setup script (`00_setup.R`), two data files in
 `data_raw/`, and empty folders (`figures/`, `data_processed/`, ...). Do not move
 or rename these.
 
@@ -37,7 +37,7 @@ or rename these.
 # R vs. RStudio
 
 **R** is the language that does the computing. **RStudio** is the program you
-use to write and run R. When you open `GEOG415_Lab1.Rproj`, RStudio shows four
+use to write and run R. When you open `GEOG415_Project.Rproj`, RStudio shows four
 areas:
 
 - **Source** (top-left): where you write and save scripts.
@@ -65,7 +65,7 @@ reproducible: you can run it again from a clean session and get the same result.
 
 # Open the project and run setup
 
-1. Open `GEOG415_Lab1.Rproj`. The title bar should show the project name.
+1. Open `GEOG415_Project.Rproj`. The title bar should show the project name.
 2. Open `00_setup.R`. You might see a yellow banner at the top of the Console that says "Package tidyverse required but is not installed". If so, then click Install and wait until it finishes.
 3. Run the `00_setup.R` file (Ctrl/Cmd + Enter runs the current line).
 
