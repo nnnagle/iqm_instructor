@@ -59,6 +59,28 @@ zip_package <- function(root) {
 }
 
 
+# Locate a Quarto executable. Rscript run from a plain shell often lacks the
+# `quarto` that RStudio bundles on its own PATH, so also honor a QUARTO_PATH
+# override and probe RStudio's bundled locations. Returns "" if none found.
+find_quarto <- function() {
+  p <- Sys.which("quarto")
+  if (nzchar(p)) return(unname(p))
+
+  env <- Sys.getenv("QUARTO_PATH", unset = "")
+  if (nzchar(env) && file.exists(env)) return(env)
+
+  candidates <- c(
+    "/Applications/RStudio.app/Contents/Resources/app/quarto/bin/quarto",   # macOS
+    "/usr/lib/rstudio/resources/app/quarto/bin/quarto",                     # Linux desktop
+    "/usr/lib/rstudio-server/bin/quarto/bin/quarto",                        # Linux server
+    "C:/Program Files/RStudio/resources/app/bin/quarto/bin/quarto.exe"      # Windows
+  )
+  hit <- candidates[file.exists(candidates)]
+  if (length(hit) > 0) return(hit[[1]])
+  ""
+}
+
+
 # Render a handout .qmd to PDF into `dest_dir`, named <out_stem>.pdf. If Quarto
 # is unavailable or the render fails, copy the .qmd source in instead (as
 # <out_stem>.qmd) so a build is never missing its handout. out_stem defaults to
@@ -67,15 +89,17 @@ emit_handout <- function(qmd_src, dest_dir, out_stem = NULL) {
   safe_dir_create(dest_dir)
   if (is.null(out_stem)) out_stem <- tools::file_path_sans_ext(basename(qmd_src))
 
-  if (nzchar(Sys.which("quarto"))) {
-    message("Rendering handout with Quarto ...")
-    status <- system2("quarto", c("render", shQuote(qmd_src), "--to", "pdf",
-                                  "--output", paste0(out_stem, ".pdf"),
-                                  "--output-dir", shQuote(normalizePath(dest_dir))))
+  quarto <- find_quarto()
+  if (nzchar(quarto)) {
+    message("Rendering handout with Quarto (", quarto, ") ...")
+    status <- system2(quarto, c("render", shQuote(qmd_src), "--to", "pdf",
+                                "--output", paste0(out_stem, ".pdf"),
+                                "--output-dir", shQuote(normalizePath(dest_dir))))
     if (status == 0L) return(invisible(dest_dir))
     warning("Quarto render failed; copying the .qmd source instead.")
   } else {
-    message("Quarto not found; copying handout source (.qmd).")
+    message("Quarto not found on PATH or in RStudio; copying handout source (.qmd).\n",
+            "  Install the Quarto CLI (https://quarto.org) or set QUARTO_PATH to render PDFs.")
   }
   copy_file(qmd_src, file.path(dest_dir, paste0(out_stem, ".qmd")))
   invisible(dest_dir)
