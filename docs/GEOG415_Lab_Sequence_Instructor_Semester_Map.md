@@ -273,6 +273,9 @@ README, script order, dependencies, metadata, reproducible outputs
 6. Audit, Response & Final Use Guidance
 Audit findings, revisions, uses, safeguards, consequences
 Corrected package, known failure points, version/change notes
+
+Note (TBD): the final package must also ship a standardized documentation artifact — either a **model card** (purpose, inputs, assumptions, appropriate/inappropriate use, known failure modes) or a **datasheet for the dataset** (provenance, composition, collection, preprocessing, recommended and discouraged uses). Decide which — or require both — before finalizing the rubric; the choice should follow from whether the audited object students most need to document is the rating/model or the underlying dataset.
+
 What future instructors / TAs / AI agents should not change casually
 Do not replace the cumulative project with disconnected weekly datasets unless there is a compelling reason.
 Do not add statistical or spatial methods merely because they are available in R; methods must solve a problem students have already encountered.
