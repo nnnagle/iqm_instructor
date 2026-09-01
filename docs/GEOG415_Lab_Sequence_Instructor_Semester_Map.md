@@ -251,6 +251,58 @@ Develop client-facing guidance: useful decisions, inappropriate uses, safeguards
 Identify specific project experiences students can later draw on in the individual assessment/reflection.
 Students should leave with: Analytic work essentially complete: corrected package, documented audit response, final geographic stress test, and evidence base for the group report and individual reflection.
 
+Incremental lab deliverables (project side)
+
+This lab is a SIDECAR to the lecture: it tracks the lecture's skills but is not locked to them, and — because the project is inherently spatial — it introduces geographic reasoning earlier than the lecture's formal Module 6. A little drift is expected; not too much.
+
+The lab has SIX incremental module deliverables plus ONE final lab deliverable. Each module deliverable is a graded checkpoint that advances the single cumulative team project and assumes the prior module's state. The lecture's Midterm and Final EXAM are separate assessments that belong to the lecture, not the lab (do not conflate the lecture Final with the lab's final deliverable).
+
+Running the whole way through: raw data stay immutable, every figure/number is produced by code, a CHANGELOG line is added each lab, and a fresh-session rerun must rebuild key products. Reproducibility is threaded through every module and CONSOLIDATED as a packaged deliverable in Module 5.
+
+Module 1 — Data & Measurement → Data Provenance & Measurement Audit
+- Lecture skills: tidy data, visualization, distributions, missingness, measurement, provenance, ethics.
+- Adds: acquire + document the data; analytic_v1; data dictionary; provenance; first maps; fitness-for-purpose.
+- Builds on: — (project base).
+
+Module 2 — Association & Comparison → Exploratory Analysis & Rating Specification
+- Lecture skills: group comparison, correlation, confounding, effect size, Simpson's paradox.
+- Adds (Lab A): univariate + bivariate descriptives of candidate indicators, including HRSA accessibility measures students compute (tract-centroid distance to nearest health center; count within a buffer); DESCRIBING distributions in words; geographic scaling of both univariate (distribution tract→county) and bivariate (association under aggregation); the need-vs-access relationship; narrow the indicator set.
+- Adds (Lab B): Rating v0.1 (direction per input, standardize by percentile/z, equal-weight baseline of need + poor access), rating map, decomposition, weight-sensitivity.
+- Artifacts: eda_brief, indicator_decisions, rating_v01.csv, scoring_spec.md, rating_map_v01.png.
+- Builds on: M1 dataset.
+
+Module 3 — Uncertainty & Evidence → Uncertainty & Evidence Brief
+- Lecture skills: sampling distributions, standard errors, confidence intervals, t-tests, p-values, power, multiple comparisons.
+- Adds: pair ACS margins of error with estimates; uncertainty diagnostics; rating STABILITY under plausible input scenarios (flag unstable tracts); one EXTERNAL outcome (CDC PLACES, kept strictly out of the rating inputs) compared across rating groups with effect size + interval + p-value and a multiple-comparison caution.
+- Artifacts: uncertainty_audit, uncertainty maps/flags, evidence_memo.
+- Builds on: M2 rating.
+
+Module 4 — Statistical Models → Model & Diagnostics Report
+- Lecture skills: linear + multiple regression, residuals, transformations, interactions, diagnostics.
+- Adds: simple regression (external outcome ~ rating), interpretation + diagnostics + residual map (saved for M6); multiple regression with a few justified predictors; model card.
+- Artifacts: model1.rds, diagnostics, residual_map, model2.rds, model_card.md, comparison.
+- Builds on: M3 external outcome (PLACES).
+
+Module 5 — Explanation & Prediction → Prediction Results + Frozen Reproducible Package
+- Lecture skills: explanation vs prediction, adjustment/confounding, train/test, overfitting, cross-validation, brief predictive models.
+- Adds: binary target + seeded train/test split + logistic → held-out metrics + geographic error map; optional random-forest comparison; THEN freeze and package the whole project so it reruns end to end.
+- Instructor-led / optional demonstration here: how PLACES is actually built — fit a toy model on BRFSS microdata and poststratify onto ACS to make a synthetic score, compared to real PLACES. This is a demonstration, not a required student build (small-area estimation is beyond the course).
+- Optional: a one-shot peer reproduction check (each team runs another team's package once).
+- Artifacts: prediction_v1, performance table, risk map, model_comparison_memo, reproducible package.
+- Builds on: M4 model. Reproducibility consolidates here.
+
+Module 6 — Geography Breaks the Rules → Geographic & Scale Audit
+- Lecture skills: spatial and temporal dependence, aggregation and scale, ecological fallacy, MAUP, spatial heterogeneity, spatial residuals, geographic ethics.
+- Adds: revisit the residual map → test spatial DEPENDENCE (Moran's I, scaffolded, or a structured map assessment) and heterogeneity; the deeper scale re-analysis (the full MAUP / ecological-fallacy treatment the Module-2 taste set up); geographic ETHICS of targeting; optional benchmark vs an external index (SVI); finalize the package. This is a checkpoint, NOT the final.
+- Artifacts: spatial_scale_audit, two-scale comparison, geographic-ethics statement, corrected package.
+- Builds on: M4 residual map, M2/M5 rating and package.
+
+Final lab deliverable — Assembled report + technical appendix + reproducible package
+- An ASSEMBLY, not new analysis: the accumulated module deliverables synthesized into (a) a client-facing report (problem → data → rating → uncertainty → models → prediction → geography → ethics → recommendation), (b) a technical appendix (scoring spec, model card, metadata), and (c) the reproducible package that reruns end to end.
+- Group product; add an individual reflection component if individual accountability is needed (each student citing specific project work). [TBD — confirm.]
+
+Documentation artifact placement: the MODEL CARD lands in Modules 4–5; if a DATASHEET for the dataset is chosen instead of / in addition to it (the earlier TBD), it lands in Module 1.
+
 Final-project handoff from the lab sequence
 Module deliverable
 Feeds group report
