@@ -32,6 +32,7 @@ R/                    # shared helpers (Census API, IO, packaging)
 data/
   acs.R  tiger.R      # acquire + clean each public source -> data/processed/<year>/
   analytic.R          # analysis-ready candidate-indicator table (shipped in Lab 3)
+  hrsa.R              # cleaned HRSA health-center points (shipped in Lab 3)
   build/<year>/       # raw downloads + provenance (git-ignored)
   processed/<year>/   # cleaned canonical data, shared by all labs
 labs/

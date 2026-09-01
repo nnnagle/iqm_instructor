@@ -19,6 +19,10 @@ manifest <- list(
   # because to the student it is a given source they did not derive.
   analytic_dest = "data_raw/tn_tract_analysis.csv",
 
+  # Cleaned HRSA health-center points (data/hrsa.R). Students compute their own
+  # accessibility measures from these.
+  hrsa_dest = "data_raw/tn_health_centers.gpkg",
+
   # Deliverable skeletons, keyed by destination path relative to the project.
   project_files = c(
     "report/eda_brief.qmd"             = "templates/eda_brief.qmd",

@@ -29,6 +29,9 @@ library(sf)
 
 d      <- readr::read_csv("data_raw/tn_tract_analysis.csv", show_col_types = FALSE)
 tracts <- sf::st_read("data_raw/tn_tracts.gpkg", quiet = TRUE)
+hc     <- sf::st_read("data_raw/tn_health_centers.gpkg", quiet = TRUE)
+# TODO: compute your access measures (dist_nearest_km, n_centers_15km) here and
+# left_join them into `d`, as in the handout, before the sections below.
 tj     <- tracts |> left_join(d, by = "GEOID")
 ```
 
@@ -37,9 +40,15 @@ tj     <- tracts |> left_join(d, by = "GEOID")
 <!-- TODO: one line — what are you deciding in this brief? (Which indicators
 belong in the rating, and why.) -->
 
+# Accessibility measure
+
+<!-- TODO: how you built the access measure(s) from the health-center points,
+and one sentence on what centroid distance does NOT capture. -->
+
 # Distributions
 
-<!-- TODO: a distribution figure + a sentence on skew / suspicious values. -->
+<!-- TODO: a distribution figure + a described-in-words center/spread/shape for
+each candidate (need indicators AND access), plus any suspicious values. -->
 
 # Associations and redundancy
 
@@ -55,8 +64,10 @@ belong in the rating, and why.) -->
 
 # Scale and the ecological fallacy (tract vs county)
 
-<!-- TODO: the correct county aggregation (sum numerator/denominator), a
-comparison of the story at each scale, and one tract whose story changes. -->
+<!-- TODO: (a) univariate — how a distribution's spread/shape changes tract→county
+(spatial support); (b) bivariate — the correct county aggregation (sum
+numerator/denominator) and how a relationship changes at each scale, with one
+tract whose story disappears when blended into its county. -->
 
 # Outliers as places
 

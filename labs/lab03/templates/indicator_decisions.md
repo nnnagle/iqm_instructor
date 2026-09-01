@@ -8,11 +8,13 @@ enough on its own.
 
 | Indicator        | Keep / Drop | Reason (evidence from the EDA) |
 |------------------|-------------|--------------------------------|
-| `poverty_rate`   | keep (example) | Broad measure of economic need; well-behaved distribution; correlated with but not redundant to the others. Example row — replace with your own judgment. |
-| `novehicle_rate` | ___ | ___ |
-| `uninsured_pct`  | ___ | ___ |
-| `age65_pct`      | ___ | ___ |
-| `disability_pct` | ___ | ___ |
+| `poverty_rate`     | keep (example) | Broad measure of economic need; well-behaved distribution; correlated with but not redundant to the others. Example row — replace with your own judgment. |
+| `novehicle_rate`   | ___ | ___ |
+| `uninsured_pct`    | ___ | ___ |
+| `age65_pct`        | ___ | ___ |
+| `disability_pct`   | ___ | ___ |
+| `dist_nearest_km`  | ___ | ___ (access, not need — you built this; note the centroid-distance limitation) |
+| `n_centers_15km`   | ___ | ___ (access; redundant with `dist_nearest_km`?) |
 
 ## Notes
 

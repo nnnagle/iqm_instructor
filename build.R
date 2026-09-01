@@ -20,6 +20,7 @@
 source("config.R")
 for (f in list.files("R", full.names = TRUE, pattern = "\\.R$")) source(f)
 source("data/analytic.R")
+source("data/hrsa.R")
 
 required_pkgs <- c("sf", "dplyr", "readr", "jsonlite")
 missing_pkgs <- required_pkgs[!vapply(required_pkgs, requireNamespace, logical(1), quietly = TRUE)]
@@ -121,8 +122,10 @@ if (any(labs %in% labs_needing_data)) {
   message("No canonical (ACS/tracts) data needed for the requested labs.")
 }
 
-# Lab 3 ships an analysis-ready tract dataset (built once, reused if present).
+# Lab 3 ships an analysis-ready tract dataset and cleaned HRSA points (each
+# built once, reused if already present).
 analytic <- NULL
+hrsa <- NULL
 if ("lab03" %in% labs) {
   analytic_path <- file.path(config$processed_dir,
                              sprintf("%s_tract_analysis.csv", config$state_slug))
@@ -130,6 +133,14 @@ if ("lab03" %in% labs) {
     message("Reusing analysis-ready dataset: ", analytic_path); analytic_path
   } else {
     analytic_build(config)
+  }
+
+  hrsa_path <- file.path(config$processed_dir,
+                         sprintf("%s_health_centers.gpkg", config$state_slug))
+  hrsa <- if (file.exists(hrsa_path)) {
+    message("Reusing HRSA points: ", hrsa_path); hrsa_path
+  } else {
+    hrsa_build(config)
   }
 }
 

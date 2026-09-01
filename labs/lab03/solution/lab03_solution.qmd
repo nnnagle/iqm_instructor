@@ -24,9 +24,22 @@ library(sf)
 
 d      <- readr::read_csv("data_raw/tn_tract_analysis.csv", show_col_types = FALSE)
 tracts <- sf::st_read("data_raw/tn_tracts.gpkg", quiet = TRUE)
-tj     <- tracts |> left_join(d, by = "GEOID")
+hc     <- sf::st_read("data_raw/tn_health_centers.gpkg", quiet = TRUE)
 
-candidates <- c("poverty_rate","novehicle_rate","uninsured_pct","age65_pct","disability_pct")
+# Accessibility measures from the health-center points (project to meters first).
+tracts_m    <- st_transform(tracts, 5070)
+hc_m        <- st_transform(hc, 5070)
+centroids_m <- st_centroid(tracts_m)
+nearest     <- st_nearest_feature(centroids_m, hc_m)
+tracts$dist_nearest_km <- as.numeric(st_distance(centroids_m, hc_m[nearest, ], by_element = TRUE)) / 1000
+tracts$n_centers_15km  <- lengths(st_is_within_distance(centroids_m, hc_m, dist = 15000))
+
+d  <- d |> left_join(st_drop_geometry(tracts) |> select(GEOID, dist_nearest_km, n_centers_15km),
+                     by = "GEOID")
+tj <- tracts["GEOID"] |> left_join(d, by = "GEOID")   # geometry + d (no duplicate cols)
+
+candidates <- c("poverty_rate","novehicle_rate","uninsured_pct","age65_pct",
+                "disability_pct","dist_nearest_km","n_centers_15km")
 ```
 
 ## Distributions

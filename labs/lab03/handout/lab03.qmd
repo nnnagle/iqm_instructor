@@ -39,10 +39,11 @@ With your team, write one sentence each:
 
 # Add this week's files to your project
 
-Same drag-in workflow as Lab 2. This week's `project_files.zip` contains three
+Same drag-in workflow as Lab 2. This week's `project_files.zip` contains four
 files for your `GEOG415_Project`:
 
 - `data_raw/tn_tract_analysis.csv` — an **analysis-ready** tract dataset,
+- `data_raw/tn_health_centers.gpkg` — HRSA health-center **locations**,
 - `report/eda_brief.qmd` — your Exploratory Analysis Brief skeleton,
 - `metadata/indicator_decisions.md` — your keep/drop memo skeleton.
 
@@ -73,13 +74,65 @@ Notice two kinds of column: **rates/percents** you will analyze
 `disability_pct`), and the **counts behind some of them** (`poverty_count`,
 `poverty_universe`, `novehicle_count`, `households`). The counts matter later.
 
-# Distributions
+# Build an accessibility measure from the health data
 
-Look at every candidate before trusting any of it.
+So far every indicator measures *need*. The project also needs a measure of
+*service access* — and unlike the ACS columns, you build this one yourself, from
+the health-center **locations**. This is the spatial half of the lab.
+
+The idea: for each tract, how far is it to the nearest health center, and how
+many are nearby? We measure from each tract's **centroid** (its center point).
+Distances must be computed in a projected coordinate system measured in meters,
+not in longitude/latitude — so we transform to one (EPSG:5070, a US equal-area
+projection) first.
 
 ```r
+tracts <- st_read("data_raw/tn_tracts.gpkg")
+hc     <- st_read("data_raw/tn_health_centers.gpkg")
+
+# Project both to meters, then take tract centroids.
+tracts_m    <- st_transform(tracts, 5070)
+hc_m        <- st_transform(hc, 5070)
+centroids_m <- st_centroid(tracts_m)
+
+# Distance (km) from each tract centroid to the NEAREST health center:
+nearest <- st_nearest_feature(centroids_m, hc_m)
+tracts$dist_nearest_km <- as.numeric(
+  st_distance(centroids_m, hc_m[nearest, ], by_element = TRUE)
+) / 1000
+
+# How many centers are within 15 km of the centroid:
+tracts$n_centers_15km <- lengths(
+  st_is_within_distance(centroids_m, hc_m, dist = 15000)
+)
+```
+
+Join the two access measures back to your data table so they sit alongside the
+need indicators:
+
+```r
+access <- tracts |> st_drop_geometry() |> select(GEOID, dist_nearest_km, n_centers_15km)
+d <- d |> left_join(access, by = "GEOID")
+```
+
+**Think about what this does and doesn't capture** (write a sentence — it goes in
+your brief): centroid distance treats everyone in a tract as standing at its
+center, which is a poor approximation in large rural tracts; and it's a
+straight-line distance, not travel time on roads. A dot on a map is a location,
+not a guarantee of capacity, hours, or who is served. Access is now one of your
+candidate indicators, with real limitations to document.
+
+# Distributions
+
+Look at every candidate — need indicators **and** your new access measures —
+before trusting any of it. Set the candidate list once and reuse it:
+
+```r
+candidates <- c("poverty_rate","novehicle_rate","uninsured_pct",
+                "age65_pct","disability_pct","dist_nearest_km","n_centers_15km")
+
 d |>
-  select(poverty_rate, novehicle_rate, uninsured_pct, age65_pct, disability_pct) |>
+  select(all_of(candidates)) |>
   pivot_longer(everything(), names_to = "indicator", values_to = "value") |>
   ggplot(aes(value)) +
   geom_histogram(bins = 30) +
@@ -87,20 +140,27 @@ d |>
   theme_minimal()
 ```
 
-Concise summaries:
+Concise summaries — **center, spread, and shape**:
 
 ```r
 d |>
   summarise(across(
-    c(poverty_rate, novehicle_rate, uninsured_pct, age65_pct, disability_pct),
+    all_of(candidates),
     list(median = ~median(.x, na.rm = TRUE),
+         mean   = ~mean(.x, na.rm = TRUE),
+         sd     = ~sd(.x, na.rm = TRUE),
          min    = ~min(.x, na.rm = TRUE),
          max    = ~max(.x, na.rm = TRUE)),
     .names = "{.col}_{.fn}"
   ))
 ```
 
-Which indicators are skewed? Any impossible or suspicious values? Note them.
+**Then describe each distribution in words** — this is a graded skill, not busywork.
+For each indicator write one sentence naming its **center** (typical value),
+**spread** (how variable), and **shape** (roughly symmetric, right-skewed,
+bimodal?), and flag any impossible or suspicious values. "Poverty rate is
+right-skewed, centered near 0.15, with a long tail of high-poverty tracts" is the
+kind of sentence we're looking for — not just a plot.
 
 # Associations and redundancy
 
@@ -111,9 +171,9 @@ ggplot(d, aes(poverty_rate, uninsured_pct)) +
   geom_smooth(method = "lm", se = FALSE) +
   theme_minimal()
 
-# All pairs at once:
+# All pairs at once (need indicators AND access):
 d |>
-  select(poverty_rate, novehicle_rate, uninsured_pct, age65_pct, disability_pct) |>
+  select(all_of(candidates)) |>
   cor(use = "pairwise.complete.obs") |>
   round(2)
 ```
@@ -121,6 +181,11 @@ d |>
 For each strongly correlated pair, decide: do they carry **distinct
 information**, or is one mostly restating the other? Two indicators that are
 nearly the same thing shouldn't both go into the rating with full weight.
+
+Then look specifically at the **need-vs-access** question the project exists to
+answer: do high-need tracts (say, high `poverty_rate`) also tend to have **poor**
+access (high `dist_nearest_km`)? Plot it and describe the relationship in words —
+this is the substantive heart of the rating.
 
 # Map two indicators
 
@@ -164,10 +229,10 @@ the rating if it isn't?
 
 # Scale changes the answer: aggregate to county
 
-Now see what happens when you change the spatial unit. Aggregate the tracts up to
-**county** and recompute the poverty rate. The right way is to **sum the
-numerator and denominator, then divide** — not to average the tract rates
-(averaging ignores that tracts hold different numbers of people).
+Now change the spatial unit — from tract to county — and watch what happens.
+Aggregate poverty to the county level the **right way**: sum the numerator and
+denominator, then divide (averaging the tract rates ignores that tracts hold
+different numbers of people).
 
 ```r
 county <- d |>
@@ -177,6 +242,35 @@ county <- d |>
     poverty_universe = sum(poverty_universe, na.rm = TRUE)
   ) |>
   mutate(poverty_rate_county = poverty_count / poverty_universe)
+```
+
+## First, univariately: the distribution itself changes
+
+Compare the **distribution** of poverty at the two scales — same underlying
+reality, different unit of analysis:
+
+```r
+c(tract_sd  = sd(d$poverty_rate, na.rm = TRUE),
+  county_sd = sd(county$poverty_rate_county, na.rm = TRUE))
+```
+
+The county distribution is **narrower** — aggregation averages away the extremes,
+so the spread shrinks and the tails compress. Plot both and describe the shift in
+center/spread/shape in words. This is *spatial support*: the same quantity looks
+more or less variable depending on the size of the unit you measure it on. A
+"high-poverty county" hides high- and low-poverty tracts inside it.
+
+## Then, bivariately: the relationship can change too
+
+Compare that to the **wrong** aggregation, to see how far off averaging rates can
+be:
+
+```r
+wrong <- d |>
+  group_by(county_geoid) |>
+  summarise(poverty_rate_avg = mean(poverty_rate, na.rm = TRUE))
+
+county |> left_join(wrong, by = "county_geoid")
 ```
 
 Compare that to the **wrong** way, and see how far apart they can be:
@@ -222,14 +316,18 @@ as the figures.
 # Reproducibility check
 
 Restart R and run your Lab 3 script from the top. It should rebuild every figure
-and the numbers in your brief from `data_raw/tn_tract_analysis.csv` with no
+and number in your brief — including the access measures — from
+`data_raw/tn_tract_analysis.csv` and `data_raw/tn_health_centers.gpkg`, with no
 manual steps. Add a `CHANGELOG.md` line for Lab 3.
 
 # What to turn in (Lab 3)
 
 - **`report/eda_brief.qmd`**, rendered — 4–6 figures with interpretation,
-  including the metro/non-metro comparison and the tract-vs-county (MAUP) result.
-- **`metadata/indicator_decisions.md`** — keep/drop with explicit reasons.
+  including your **accessibility measure**, the described distributions, the
+  metro/non-metro comparison, and the tract-vs-county scaling result (univariate
+  *and* bivariate).
+- **`metadata/indicator_decisions.md`** — keep/drop with explicit reasons
+  (need indicators and access).
 - Saved figures in `figures/`.
 
 Together these are the exploratory half of the Module 2 deliverable

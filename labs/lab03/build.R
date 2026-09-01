@@ -9,10 +9,13 @@
 #   project_files.zip   the same, wrapped, for the drag-into-project workflow
 # ==============================================================================
 
-# Lab 3 needs the analysis-ready dataset, which the driver builds first.
-if (!exists("config") || !exists("analytic") || is.null(analytic)) {
+# Lab 3 needs the analysis-ready dataset and HRSA points, which the driver
+# builds first.
+if (!exists("config") || !exists("analytic") || is.null(analytic) ||
+    !exists("hrsa") || is.null(hrsa)) {
   stop("Run Lab 3 via the driver:\n  Rscript build.R lab03\n",
-       "(it builds the analysis-ready dataset this lab ships).", call. = FALSE)
+       "(it builds the analysis-ready dataset and HRSA points this lab ships).",
+       call. = FALSE)
 }
 
 lab_dir <- file.path("labs", "lab03")
@@ -23,8 +26,9 @@ prepare_output_root(out_dir, config$overwrite)
 
 staging <- file.path(out_dir, "project_files")
 
-# Provided analysis-ready dataset.
+# Provided analysis-ready dataset and HRSA points.
 copy_file(analytic, file.path(staging, manifest$analytic_dest))
+copy_file(hrsa, file.path(staging, manifest$hrsa_dest))
 
 # Deliverable skeletons.
 for (dest in names(manifest$project_files)) {
